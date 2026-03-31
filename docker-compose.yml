@@ -1,0 +1,26 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./billing-api
+    ports:
+      - "3000:3000"
+    env_file: .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    env_file: .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
