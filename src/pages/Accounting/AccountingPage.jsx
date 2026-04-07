@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Calendar, Download, FileText, FileDown, PieChart } from 'lucide-react';
 import useAccounting from '../../hooks/useAccounting';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const AccountingPage = () => {
   const { data, resumen, loading, error, fetchLibroVentas, fetchLibroCompras, fetchResumenIva, clearData } = useAccounting();
   
   const [activeTab, setActiveTab] = useState('ventas'); // ventas | compras | iva
   
-  // Rango de fechas por defecto: primer día del mes actual hasta el día actual
+  // Rango de fechas por defecto: últimos 30 días
   const getFirstDayOfMonth = () => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
   };
   const getToday = () => {
     return new Date().toISOString().split('T')[0];
@@ -30,38 +32,151 @@ const AccountingPage = () => {
     else if (activeTab === 'iva') fetchResumenIva(fechaInicio, fechaFin);
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!data || data.length === 0) return alert('No hay datos para exportar');
     
-    // Preparar datos según el tipo de libro
-    let exportData = [];
-    if (activeTab === 'ventas') {
-      exportData = data.map(v => ({
-        'Fecha': new Date(v.fecha).toLocaleDateString(),
-        'Nro Factura': v.numero_factura,
-        'Razón Social / Cliente': v.cliente_nombre || 'Consumidor Final',
-        'RNC / Cédula': v.rnc_cedula || '',
-        'Base Imponible': parseFloat(v.base_imponible).toFixed(2),
-        'IVA': parseFloat(v.iva_retenido).toFixed(2),
-        'Total': parseFloat(v.total).toFixed(2),
-        'Estado': v.estado
-      }));
-    } else if (activeTab === 'compras') {
-      exportData = data.map(c => ({
-        'Fecha': new Date(c.fecha).toLocaleDateString(),
-        'Nro Factura Proveedor': c.numero_factura_proveedor,
-        'Proveedor': c.proveedor_nombre || 'Desconocido',
-        'RNC Proveedor': c.rnc_cedula || '',
-        'Base Imponible': parseFloat(c.base_imponible).toFixed(2),
-        'IVA Soportado': parseFloat(c.iva_soportado).toFixed(2),
-        'Total': parseFloat(c.total).toFixed(2)
-      }));
-    }
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema POS Bodegón';
+    const worksheet = workbook.addWorksheet(activeTab === 'ventas' ? 'Libro de Ventas' : 'Libro Compras');
+
+    // Título Principal
+    worksheet.mergeCells('A1:G1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = activeTab === 'ventas' ? 'REPORTE FISCAL - LIBRO DE VENTAS' : 'REPORTE FISCAL - LIBRO DE COMPRAS';
+    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2C3E50' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(1).height = 30;
+
+    // Subtítulo con Fechas
+    worksheet.mergeCells('A2:G2');
+    const subtitleCell = worksheet.getCell('A2');
+    subtitleCell.value = `Período consultado: Desde ${fechaInicio} hasta ${fechaFin}`;
+    subtitleCell.font = { name: 'Arial', size: 11, italic: true, color: { argb: 'FF555555' } };
+    subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(2).height = 20;
     
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Libro_${activeTab}`);
-    XLSX.writeFile(wb, `Libro_${activeTab}_${fechaInicio}_al_${fechaFin}.xlsx`);
+    // Fila en blanco
+    worksheet.addRow([]);
+
+    // Configurar Encabezados
+    let headers = [];
+    if (activeTab === 'ventas') {
+      headers = ['Fecha', 'Nro Factura', 'Razón Social / Cliente', 'RNC / Cédula', 'Base Imponible', 'IVA Repercutido', 'Total Operación'];
+      worksheet.columns = [
+        { key: 'fecha', width: 15 },
+        { key: 'nro_factura', width: 20 },
+        { key: 'cliente', width: 40 },
+        { key: 'rnc', width: 20 },
+        { key: 'base', width: 20 },
+        { key: 'iva', width: 20 },
+        { key: 'total', width: 20 }
+      ];
+    } else {
+      headers = ['Fecha', 'Nro Factura', 'Proveedor', 'RNC / Cédula', 'Base Imponible', 'IVA Soportado', 'Total Operación'];
+      worksheet.columns = [
+        { key: 'fecha', width: 15 },
+        { key: 'nro_factura', width: 20 },
+        { key: 'cliente', width: 40 },
+        { key: 'rnc', width: 20 },
+        { key: 'base', width: 20 },
+        { key: 'iva', width: 20 },
+        { key: 'total', width: 20 }
+      ];
+    }
+
+    const headerRow = worksheet.addRow(headers);
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF34495E' } };
+      cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+    headerRow.height = 25;
+
+    // Agregar Datos y Calcular Totales
+    let totalBase = 0;
+    let totalIva = 0;
+    let totalMonto = 0;
+
+    data.forEach((item, index) => {
+      let rowData = [];
+      const base = parseFloat(item.base_imponible || 0);
+      const total = parseFloat(item.total || 0);
+      let iva = 0;
+
+      if (activeTab === 'ventas') {
+        iva = parseFloat(item.iva_retenido || 0);
+        rowData = [
+          new Date(item.fecha).toLocaleDateString(),
+          item.numero_factura,
+          item.cliente_nombre || 'Consumidor Final',
+          item.rnc_cedula || 'N/A',
+          base,
+          iva,
+          total
+        ];
+      } else {
+        iva = parseFloat(item.iva_soportado || 0);
+        rowData = [
+          new Date(item.fecha).toLocaleDateString(),
+          item.numero_factura_proveedor,
+          item.proveedor_nombre || 'Desconocido',
+          item.rnc_cedula || 'N/A',
+          base,
+          iva,
+          total
+        ];
+      }
+
+      totalBase += base;
+      totalIva += iva;
+      totalMonto += total;
+
+      const valRow = worksheet.addRow(rowData);
+      
+      // Estilos para la fila de datos
+      const alternateColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF9FAFB'; // Gris muy claro intercalado
+      valRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alternateColor } };
+        cell.border = { top: {style:'thin', color:{argb:'FFEEEEEE'}}, bottom: {style:'thin', color:{argb:'FFEEEEEE'}}, left: {style:'thin', color:{argb:'FFEEEEEE'}}, right: {style:'thin', color:{argb:'FFEEEEEE'}} };
+        
+        // Centrar las primeras 4 columnas
+        if (colNumber <= 4) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else {
+          // Moneda y alinear a la derecha para montos
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = '"$"#,##0.00';
+        }
+      });
+    });
+
+    // Fila de Totales
+    worksheet.addRow([]); // Espaciador
+    const totalsRow = worksheet.addRow(['', '', '', 'TOTALES GENERALES', totalBase, totalIva, totalMonto]);
+    
+    totalsRow.getCell(4).font = { bold: true, size: 12, color: { argb: 'FF2C3E50' } };
+    totalsRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+    
+    // Formato de totales
+    [5, 6, 7].forEach(colIndex => {
+      const cell = totalsRow.getCell(colIndex);
+      cell.font = { bold: true, size: 12, color: { argb: colIndex === 7 ? 'FF10B981' : 'FF2C3E50' } }; 
+      cell.numFmt = '"$"#,##0.00';
+      cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0Fdf4' } }; // Verde muy tenue para resaltar
+      cell.border = { 
+        top: {style:'double', color:{argb:'FF10B981'}}, 
+        bottom: {style:'double', color:{argb:'FF10B981'}} 
+      };
+    });
+    totalsRow.height = 30;
+
+    // Descarga
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Libro_${activeTab}_${fechaInicio}_${fechaFin}.xlsx`);
   };
 
   return (

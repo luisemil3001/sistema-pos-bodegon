@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import useProducts from '../../hooks/useProducts';
 import ProductModal from './ProductModal';
 
@@ -45,6 +47,119 @@ const ProductsPage = () => {
     (p.codigo_barras && p.codigo_barras.includes(searchTerm))
   );
 
+  const exportToExcel = async () => {
+    if (!products || products.length === 0) return alert('No hay productos para exportar');
+    
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema POS Bodegón';
+    const worksheet = workbook.addWorksheet('Inventario');
+
+    // Título Principal
+    worksheet.mergeCells('A1:G1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'REPORTE DE INVENTARIO ACTUAL';
+    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2C3E50' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(1).height = 30;
+
+    // Subtítulo con Fechas
+    worksheet.mergeCells('A2:G2');
+    const subtitleCell = worksheet.getCell('A2');
+    subtitleCell.value = `Emitido: ${new Date().toLocaleString()}`;
+    subtitleCell.font = { name: 'Arial', size: 11, italic: true, color: { argb: 'FF555555' } };
+    subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(2).height = 20;
+    
+    // Fila en blanco
+    worksheet.addRow([]);
+
+    // Configurar Encabezados
+    const headers = ['Código de Barras', 'Nombre del Producto', 'Categoría', 'Unidad', 'Costo Unit.', 'Venta Unit.', 'Stock Actual'];
+    worksheet.columns = [
+      { key: 'codigo', width: 20 },
+      { key: 'nombre', width: 40 },
+      { key: 'categoria', width: 25 },
+      { key: 'unidad', width: 15 },
+      { key: 'costo', width: 18 },
+      { key: 'venta', width: 18 },
+      { key: 'stock', width: 15 }
+    ];
+
+    const headerRow = worksheet.addRow(headers);
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF34495E' } };
+      cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+    headerRow.height = 25;
+
+    // Agregar Datos
+    let totalCostoInventario = 0;
+    let totalVentaInventario = 0;
+
+    const listToExport = filteredProducts.length > 0 ? filteredProducts : products;
+
+    listToExport.forEach((item, index) => {
+      const costo = parseFloat(item.precio_costo || 0);
+      const venta = parseFloat(item.precio_venta || 0);
+      const stock = parseInt(item.stock || 0);
+
+      totalCostoInventario += (costo * stock);
+      totalVentaInventario += (venta * stock);
+
+      const rowData = [
+        item.codigo_barras || 'N/A',
+        item.nombre,
+        item.categoria_nombre || 'Sin Categoría',
+        item.unidad || 'Unid',
+        costo,
+        venta,
+        stock
+      ];
+
+      const valRow = worksheet.addRow(rowData);
+      
+      const alternateColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF9FAFB';
+      valRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alternateColor } };
+        cell.border = { top: {style:'thin', color:{argb:'FFEEEEEE'}}, bottom: {style:'thin', color:{argb:'FFEEEEEE'}}, left: {style:'thin', color:{argb:'FFEEEEEE'}}, right: {style:'thin', color:{argb:'FFEEEEEE'}} };
+        
+        if (colNumber <= 4) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (colNumber === 5 || colNumber === 6) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = '"$"#,##0.00';
+        } else if (colNumber === 7) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.font = { bold: true, color: { argb: stock <= (item.min_stock||5) ? 'EF4444' : '22C55E' } };
+        }
+      });
+    });
+
+    // Fila de Totales de Valoración
+    worksheet.addRow([]);
+    const totalsRow = worksheet.addRow(['', '', '', 'VALOR TOTAL INVENTARIO:', totalCostoInventario, totalVentaInventario, '']);
+    
+    totalsRow.getCell(4).font = { bold: true, size: 12, color: { argb: 'FF2C3E50' } };
+    totalsRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+    
+    [5, 6].forEach(colIndex => {
+      const cell = totalsRow.getCell(colIndex);
+      cell.font = { bold: true, size: 12, color: { argb: colIndex === 6 ? 'FF10B981' : 'FF3B82F6' } }; 
+      cell.numFmt = '"$"#,##0.00';
+      cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colIndex === 6 ? 'FFF0Fdf4' : 'FFE3F2FD' } };
+      cell.border = { top: {style:'double'}, bottom: {style:'double'} };
+    });
+    totalsRow.height = 30;
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Listado_Inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
       {/* Header Actions */}
@@ -53,21 +168,41 @@ const ProductsPage = () => {
           <h1 style={{ fontSize: '1.5rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Catálogo de Productos</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestione su inventario, precios y categorías</p>
         </div>
-        <button 
-          onClick={handleOpenNew}
-          style={{ 
-            backgroundColor: 'var(--primary)', 
-            color: 'var(--bg-main)', 
-            padding: '0.6rem 1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontWeight: '600'
-          }}
-        >
-          <Plus size={18} />
-          Nuevo Producto
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            onClick={exportToExcel}
+            style={{ 
+              backgroundColor: 'var(--success)', 
+              color: 'var(--bg-main)', 
+              padding: '0.6rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: '600',
+              border: '1px solid var(--success)'
+            }}
+            title="Exportar listado a Excel"
+          >
+            <Download size={18} />
+            Exportar Excel
+          </button>
+          
+          <button 
+            onClick={handleOpenNew}
+            style={{ 
+              backgroundColor: 'var(--primary)', 
+              color: 'var(--bg-main)', 
+              padding: '0.6rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: '600'
+            }}
+          >
+            <Plus size={18} />
+            Nuevo Producto
+          </button>
+        </div>
       </div>
 
       {/* Filters & Errors */}
