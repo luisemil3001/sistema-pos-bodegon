@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { generarPayloadImpresion } = require('../services/printerService');
+const { generarPayloadImpresion, enviarAImpresoraFiscal } = require('../services/printerService');
 
 // Crear una nueva factura
 const createInvoice = async (req, res) => {
@@ -123,6 +123,9 @@ const createInvoice = async (req, res) => {
       nombre: empresa.nombre,
       rnc: empresa.rnc,
     });
+
+    // Enviar a la impresora en segundo plano (no bloquea)
+    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
 
     res.status(201).json({ 
       success: true, 
@@ -253,6 +256,9 @@ const reprintInvoice = async (req, res) => {
     const empresa = empresaRows[0] || {};
 
     const payloadImpresion = generarPayloadImpresion(facturaCompleta, empresa, { esCopia: true });
+
+    // Enviar a la impresora en segundo plano (para que escupa la copia)
+    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
 
     res.json({ success: true, impresion: payloadImpresion });
   } catch (err) {

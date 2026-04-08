@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { generarPayloadNotaCredito } = require('../services/printerService');
+const { generarPayloadNotaCredito, enviarAImpresoraFiscal } = require('../services/printerService');
 
 // Crear una Nota de Crédito (devolución total con reembolso)
 const createCreditNote = async (req, res) => {
@@ -106,6 +106,9 @@ const createCreditNote = async (req, res) => {
     };
 
     const payloadImpresion = generarPayloadNotaCredito(notaParaImprimir, empresa);
+
+    // Enviar a la impresora en segundo plano (no bloquea al usuario)
+    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
 
     res.status(201).json({
       success: true,

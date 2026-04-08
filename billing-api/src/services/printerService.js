@@ -352,9 +352,81 @@ function generarPayloadNotaCredito(nota, empresa) {
   };
 }
 
+// ============================================================
+// Enviar al Hardware Físico (SerialPort)
+// ============================================================
+async function enviarAImpresoraFiscal(payloadImpresion) {
+  // Solo se envía si es tipo fiscal
+  if (!payloadImpresion || payloadImpresion.tipo !== 'fiscal') {
+    console.log('enviarAImpresoraFiscal: No es una impresora fiscal. Evitando envío físico.');
+    return { success: true, message: 'Simulated for non-fiscal' };
+  }
+
+  const { puerto, comandos_seriales } = payloadImpresion;
+
+  if (!puerto || !comandos_seriales || comandos_seriales.length === 0) {
+    console.error('enviarAImpresoraFiscal: Faltan comandos o puerto de impresión.');
+    return { success: false, error: 'Comandos o puerto inválido' };
+  }
+
+  let serialport;
+  try {
+    const sp = require('serialport');
+    serialport = sp.SerialPort;
+  } catch (err) {
+    console.error('enviarAImpresoraFiscal: El módulo serialport no está instalado. Ejecute: npm install serialport');
+    return { success: false, error: 'serialport no instalado' };
+  }
+
+  return new Promise((resolve) => {
+    console.log(`Intentando conectar a impresora fiscal en puerto: ${puerto}...`);
+    
+    // Configuración común para impresoras fiscales
+    const port = new serialport({
+      path: puerto,
+      baudRate: 9600, // TFHKA y Epson suelen usar 9600
+      dataBits: 8,
+      stopBits: 1,
+      parity: 'none',
+    }, (err) => {
+      if (err) {
+        console.error(`Error abriendo puerto ${puerto}:`, err.message);
+        resolve({ success: false, error: `Error conectando a impresora: ${err.message}` });
+      }
+    });
+
+    port.on('open', async () => {
+      console.log(`Puerto ${puerto} abierto exitosamente. Enviando ${comandos_seriales.length} comandos.`);
+      
+      try {
+        for (const comandoItem of comandos_seriales) {
+          await new Promise((resCmd, rejCmd) => {
+            port.write(comandoItem.cmd, 'binary', (err) => {
+              if (err) return rejCmd(err);
+              
+              // Pequeño delay de 50ms para no saturar el buffer USB/Serial
+              setTimeout(resCmd, 50);
+            });
+          });
+        }
+        
+        console.log('Impresión enviada correctamente.');
+        port.close();
+        resolve({ success: true, message: 'Enviado correctamente a impresora fiscal' });
+
+      } catch (err) {
+        console.error('Error escribiendo al puerto impresor:', err);
+        port.close();
+        resolve({ success: false, error: `Fallo durante la escritura: ${err.message}` });
+      }
+    });
+  });
+}
+
 module.exports = {
   generarPayloadImpresion,
   generarPayloadNotaCredito,
   detectarImpresora,
+  enviarAImpresoraFiscal,
   PRINTER_BRANDS,
 };
