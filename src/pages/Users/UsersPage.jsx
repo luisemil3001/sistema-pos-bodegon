@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Edit, Trash2, Shield, CheckCircle, XCircle } from 'lucide-react';
 import useUsers from '../../hooks/useUsers';
+import { useAuth } from '../../context/AuthContext';
 
 const UsersPage = () => {
+    const { user: currentUser } = useAuth();
+    const isAdmin = currentUser?.rol === 'admin';
     const { users, loading, error, fetchUsers, createUser, updateUser, deleteUser } = useUsers();
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
@@ -52,14 +55,16 @@ const UsersPage = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Gestión de Usuarios</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Administre los cajeros y personal con acceso al sistema</p>
+                    <p style={{ color: 'var(--text-muted)' }}>{isAdmin ? 'Administre los cajeros y personal con acceso al sistema' : 'Gestione su contraseña de acceso'}</p>
                 </div>
-                <button 
-                    onClick={() => handleOpenModal()}
-                    style={{ padding: '0.75rem 1.25rem', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600' }}
-                >
-                    <UserPlus size={20} /> Nuevo Usuario
-                </button>
+                {isAdmin && (
+                    <button 
+                        onClick={() => handleOpenModal()}
+                        style={{ padding: '0.75rem 1.25rem', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600' }}
+                    >
+                        <UserPlus size={20} /> Nuevo Usuario
+                    </button>
+                )}
             </div>
 
             {error && <div style={{ color: 'var(--danger)', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>{error}</div>}
@@ -78,10 +83,10 @@ const UsersPage = () => {
                     <tbody>
                         {loading && users.length === 0 ? (
                             <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>Cargando usuarios...</td></tr>
-                        ) : users.length === 0 ? (
+                        ) : (isAdmin ? users : users.filter(u => u.id === currentUser?.id)).length === 0 ? (
                             <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>No hay usuarios registrados</td></tr>
                         ) : (
-                            users.map(user => (
+                            (isAdmin ? users : users.filter(u => u.id === currentUser?.id)).map(user => (
                                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                     <td style={{ padding: '1rem', fontWeight: '500' }}>{user.nombre}</td>
                                     <td style={{ padding: '1rem' }}>{user.usuario}</td>
@@ -106,7 +111,7 @@ const UsersPage = () => {
                                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                             <button onClick={() => handleOpenModal(user)} style={{ padding: '0.4rem', color: 'var(--text-muted)', background: 'transparent' }}><Edit size={18}/></button>
-                                            <button onClick={() => handleDelete(user.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={18}/></button>
+                                            {isAdmin && <button onClick={() => handleDelete(user.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={18}/></button>}
                                         </div>
                                     </td>
                                 </tr>
@@ -128,7 +133,8 @@ const UsersPage = () => {
                                     required
                                     value={formData.nombre} 
                                     onChange={e => setFormData({...formData, nombre: e.target.value})}
-                                    style={{ width: '100%', padding: '0.75rem' }} 
+                                    disabled={!isAdmin}
+                                    style={{ width: '100%', padding: '0.75rem', opacity: !isAdmin ? 0.6 : 1 }} 
                                 />
                             </div>
                             <div>
@@ -138,7 +144,8 @@ const UsersPage = () => {
                                     required
                                     value={formData.usuario} 
                                     onChange={e => setFormData({...formData, usuario: e.target.value})}
-                                    style={{ width: '100%', padding: '0.75rem' }} 
+                                    disabled={!isAdmin}
+                                    style={{ width: '100%', padding: '0.75rem', opacity: !isAdmin ? 0.6 : 1 }} 
                                 />
                             </div>
                             <div>
@@ -159,7 +166,8 @@ const UsersPage = () => {
                                     <select 
                                         value={formData.rol} 
                                         onChange={e => setFormData({...formData, rol: e.target.value})}
-                                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', color: 'white' }}
+                                        disabled={!isAdmin}
+                                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', color: 'white', opacity: !isAdmin ? 0.6 : 1 }}
                                     >
                                         <option value="cajero">Cajero</option>
                                         <option value="admin">Administrador</option>
@@ -170,7 +178,8 @@ const UsersPage = () => {
                                     <select 
                                         value={formData.activo} 
                                         onChange={e => setFormData({...formData, activo: parseInt(e.target.value)})}
-                                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', color: 'white' }}
+                                        disabled={!isAdmin}
+                                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', color: 'white', opacity: !isAdmin ? 0.6 : 1 }}
                                     >
                                         <option value={1}>Activo</option>
                                         <option value={0}>Inactivo</option>

@@ -22,7 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 const Sidebar = () => {
   const { logout, user } = useAuth();
 
-  const menuItems = [
+  const allMenuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Punto de Venta', path: '/pos', icon: <ShoppingCart size={20} /> },
     { name: 'Productos', path: '/productos', icon: <Package size={20} /> },
@@ -38,6 +38,10 @@ const Sidebar = () => {
     { name: 'Gestión Usuarios', path: '/usuarios', icon: <Users2 size={20} /> },
     { name: 'Configuración', path: '/config', icon: <Settings size={20} /> },
   ];
+
+  const menuItems = user?.rol === 'admin'
+    ? allMenuItems
+    : allMenuItems.filter(item => !['/config', '/ncf'].includes(item.path));
 
   return (
     <aside style={{

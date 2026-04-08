@@ -59,8 +59,16 @@ function App() {
             <Route path="reportes" element={<ReportsPage />} />
             <Route path="usuarios" element={<UsersPage />} />
             <Route path="caja" element={<CajaPage />} />
-            <Route path="ncf" element={<NCFPage />} />
-            <Route path="config" element={<SettingsPage />} />
+            <Route path="ncf" element={
+              <ProtectedRoute role="admin">
+                <NCFPage />
+              </ProtectedRoute>
+            } />
+            <Route path="config" element={
+              <ProtectedRoute role="admin">
+                <SettingsPage />
+              </ProtectedRoute>
+            } />
           </Route>
 
           {/* Captura cualquier otra ruta y manda al inicio */}
