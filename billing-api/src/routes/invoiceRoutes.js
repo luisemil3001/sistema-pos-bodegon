@@ -5,6 +5,7 @@ const { verifyToken } = require('../middlewares/auth');
 
 router.get('/', verifyToken, invoiceController.getInvoices);
 router.get('/:id', verifyToken, invoiceController.getInvoiceById);
+router.get('/:id/reprint', verifyToken, invoiceController.reprintInvoice);
 router.put('/:id/void', verifyToken, invoiceController.voidInvoice);
 router.post('/', verifyToken, invoiceController.createInvoice);
 

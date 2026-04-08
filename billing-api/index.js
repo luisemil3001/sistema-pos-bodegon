@@ -40,6 +40,7 @@ app.use('/api/contabilidad', require('./src/routes/contabilidadRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/caja', require('./src/routes/cajaRoutes'));
 app.use('/api/dashboard', require('./src/routes/dashboardRoutes'));
+app.use('/api/credit-notes', require('./src/routes/creditNoteRoutes'));
 
 // --- MANEJO DE RUTAS NO ENCONTRADAS (404) ---
 app.use((req, res) => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Printer, Receipt, XCircle } from 'lucide-react';
+import { Search, Printer, Receipt, XCircle, RotateCcw } from 'lucide-react';
 import useInvoices from '../../hooks/useInvoices';
 import ReceiptModal from './ReceiptModal';
+import CreditNoteModal from './CreditNoteModal';
 import api from '../../api/api';
 
 const InvoicesPage = () => {
@@ -12,6 +13,9 @@ const InvoicesPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [settings, setSettings] = useState(null);
+  const [isCreditNoteOpen, setIsCreditNoteOpen] = useState(false);
+  const [selectedForNC, setSelectedForNC] = useState(null);
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     fetchInvoices();
@@ -43,6 +47,17 @@ const InvoicesPage = () => {
     }
   };
 
+  const handleOpenCreditNote = (inv) => {
+    setSelectedForNC(inv);
+    setIsCreditNoteOpen(true);
+  };
+
+  const handleCreditNoteSuccess = (data) => {
+    setSuccessMsg(`✅ ${data.message}`);
+    fetchInvoices();
+    setTimeout(() => setSuccessMsg(''), 6000);
+  };
+
   const filteredInvoices = invoices.filter(inv => 
     inv.numero_factura.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (inv.cliente_nombre && inv.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -54,9 +69,15 @@ const InvoicesPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Historial de Facturas</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Consulte y reimprima facturas emitidas</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Consulte facturas y emita Notas de Crédito</p>
         </div>
       </div>
+
+      {successMsg && (
+        <div style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--success)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(34,197,94,0.3)', fontSize: '0.9rem' }}>
+          {successMsg}
+        </div>
+      )}
 
       {/* Filters & Errors */}
       {error && (
@@ -109,6 +130,7 @@ const InvoicesPage = () => {
                       <td style={{ padding: '1rem', fontWeight: '600', color: inv.estado === 'anulada' ? 'var(--text-muted)' : 'var(--primary)', textDecoration: inv.estado === 'anulada' ? 'line-through' : 'none' }}>
                         {inv.numero_factura}
                         {inv.estado === 'anulada' && <span style={{ marginLeft: '0.5rem', color: 'var(--danger)', fontSize: '0.65rem', border: '1px solid var(--danger)', padding: '1px 4px', borderRadius: '4px' }}>ANULADA</span>}
+                        {inv.tiene_nota_credito && <span style={{ marginLeft: '0.5rem', color: '#fbbf24', fontSize: '0.65rem', border: '1px solid #fbbf24', padding: '1px 4px', borderRadius: '4px' }}>NC</span>}
                       </td>
                       <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{new Date(inv.fecha).toLocaleString()}</td>
                       <td style={{ padding: '1rem', fontWeight: '500' }}>
@@ -134,18 +156,18 @@ const InvoicesPage = () => {
                           <button 
                             onClick={() => handleViewReceipt(inv.id)}
                             style={{ padding: '0.4rem 1rem', backgroundColor: 'var(--primary)', color: 'var(--bg-main)', border: 'none', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: 'bold' }}
-                            title="Ver e Imprimir"
+                            title={settings?.tipo_impresora === 'fiscal' ? "Imprimir Copia No Fiscal" : "Imprimir Copia"}
                           >
-                            <Printer size={16} /> Imprimir
+                            <Printer size={16} /> {settings?.tipo_impresora === 'fiscal' ? 'Copia No Fiscal' : 'Copia'}
                           </button>
                           
-                          {inv.estado !== 'anulada' && (
+                          {inv.estado !== 'anulada' && !inv.tiene_nota_credito && (
                             <button 
-                              onClick={() => handleVoidInvoice(inv.id, inv.numero_factura)}
-                              style={{ padding: '0.4rem 0.8rem', backgroundColor: 'transparent', color: 'var(--danger)', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
-                              title="Anular Factura"
+                              onClick={() => handleOpenCreditNote(inv)}
+                              style={{ padding: '0.4rem 0.8rem', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
+                              title="Emitir Nota de Crédito / Devolución"
                             >
-                              <XCircle size={16} />
+                              <RotateCcw size={15} /> Devolución
                             </button>
                           )}
                         </div>
@@ -161,13 +183,18 @@ const InvoicesPage = () => {
 
       <ReceiptModal 
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedInvoice(null);
-        }}
+        onClose={() => { setIsModalOpen(false); setSelectedInvoice(null); }}
         invoice={selectedInvoice}
         settings={settings}
         loadingDetalle={loadingDetalle}
+      />
+
+      <CreditNoteModal
+        isOpen={isCreditNoteOpen}
+        onClose={() => { setIsCreditNoteOpen(false); setSelectedForNC(null); }}
+        invoice={selectedForNC}
+        settings={settings}
+        onSuccess={handleCreditNoteSuccess}
       />
     </div>
   );

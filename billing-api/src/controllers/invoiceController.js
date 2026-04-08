@@ -225,4 +225,41 @@ const voidInvoice = async (req, res) => {
   }
 };
 
-module.exports = { createInvoice, getInvoices, getInvoiceById, voidInvoice };
+// Generar Payload para Copia No Fiscal
+const reprintInvoice = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const [facturas] = await pool.query(`
+      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.direccion, u.nombre as cajero_nombre
+      FROM facturas f
+      LEFT JOIN clientes c ON f.cliente_id = c.id
+      LEFT JOIN usuarios u ON f.usuario_id = u.id
+      WHERE f.id = ?
+    `, [id]);
+
+    if (facturas.length === 0) return res.status(404).json({ error: 'Factura no encontrada' });
+
+    const [items] = await pool.query(`
+      SELECT i.*, p.nombre as producto_nombre, p.codigo_barras, p.aplica_iva
+      FROM factura_items i
+      JOIN productos p ON i.producto_id = p.id
+      WHERE i.factura_id = ?
+    `, [id]);
+
+    const facturaCompleta = { ...facturas[0], items };
+
+    const [empresaRows] = await pool.query('SELECT * FROM empresas LIMIT 1');
+    const empresa = empresaRows[0] || {};
+
+    const payloadImpresion = generarPayloadImpresion(facturaCompleta, empresa, { esCopia: true });
+
+    res.json({ success: true, impresion: payloadImpresion });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al generar la copia no fiscal' });
+  }
+};
+
+module.exports = { createInvoice, getInvoices, getInvoiceById, voidInvoice, reprintInvoice };
+
