@@ -34,14 +34,13 @@ const Sidebar = () => {
     { name: 'Contabilidad', path: '/contabilidad', icon: <BookOpen size={20} /> },
     { name: 'Control de Caja', path: '/caja', icon: <Lock size={20} /> },
     { name: 'Reportes', path: '/reportes', icon: <BarChart3 size={20} /> },
-    { name: 'Gestión NCF', path: '/ncf', icon: <FileDigit size={20} /> },
     { name: 'Gestión Usuarios', path: '/usuarios', icon: <Users2 size={20} /> },
     { name: 'Configuración', path: '/config', icon: <Settings size={20} /> },
   ];
 
   const menuItems = user?.rol === 'admin'
     ? allMenuItems
-    : allMenuItems.filter(item => !['/config', '/ncf'].includes(item.path));
+    : allMenuItems.filter(item => !['/config'].includes(item.path));
 
   return (
     <aside style={{

@@ -1,8 +1,9 @@
 const pool = require('../config/db');
+const { generarPayloadImpresion } = require('../services/printerService');
 
 // Crear una nueva factura
 const createInvoice = async (req, res) => {
-  const { cliente_id, items, metodo_pago, descuento_global, ncf_tipo } = req.body;
+  const { cliente_id, items, metodo_pago, descuento_global } = req.body;
   const usuario_id = req.user.id;
 
   if (!items || items.length === 0) {
@@ -25,42 +26,17 @@ const createInvoice = async (req, res) => {
     }
     const caja_id = cajaRows[0].id;
 
-    // 2. Gestionar NCF (opcional, si viene ncf_tipo)
-    let ncf_final = null;
-    if (ncf_tipo) {
-      const [ncfRows] = await connection.query(
-        'SELECT * FROM ncf_sequences WHERE tipo = ? AND activo = 1 FOR UPDATE',
-        [ncf_tipo]
-      );
-
-      if (ncfRows.length === 0) {
-        throw new Error(`Secuencia NCF para tipo ${ncf_tipo} no encontrada o inactiva.`);
-      }
-
-      const seq = ncfRows[0];
-      if (seq.secuencia_actual > seq.secuencia_fin) {
-        throw new Error(`Secuencia NCF agotada para el tipo ${seq.nombre}.`);
-      }
-
-      // Ejemplo: B + 01 + 00000001
-      ncf_final = `${seq.prefijo}${seq.tipo}${String(seq.secuencia_actual).padStart(8, '0')}`;
-
-      // Incrementar secuencia
-      await connection.query(
-        'UPDATE ncf_sequences SET secuencia_actual = secuencia_actual + 1 WHERE id = ?',
-        [seq.id]
-      );
-    }
-
-    const [empresa] = await connection.query('SELECT itbis_tasa FROM empresas LIMIT 1');
-    const tasa_iva = empresa.length > 0 ? parseFloat(empresa[0].itbis_tasa) / 100 : 0.16;
+    // 2. Obtener configuración de la empresa
+    const [empresaRows] = await connection.query('SELECT * FROM empresas LIMIT 1');
+    const empresa = empresaRows[0] || {};
+    const tasa_iva = parseFloat(empresa.itbis_tasa || 16) / 100;
+    const tasa_igtf = parseFloat(empresa.igtf_tasa || 3) / 100;
 
     let totalSubtotal = 0;
     let totalIva = 0;
-
-    // Verificar stock y calcular totales
     const processedItems = [];
 
+    // 3. Verificar stock y calcular totales
     for (const item of items) {
       const [prodRows] = await connection.query('SELECT * FROM productos WHERE id = ?', [item.producto_id]);
       if (prodRows.length === 0) throw new Error(`Producto ID ${item.producto_id} no encontrado`);
@@ -68,7 +44,7 @@ const createInvoice = async (req, res) => {
       const producto = prodRows[0];
       
       if (producto.stock < item.cantidad) {
-        throw new Error(`Stock insuficiente para el producto: ${producto.nombre} (Disponibles: ${producto.stock})`);
+        throw new Error(`Stock insuficiente para: ${producto.nombre} (Disponibles: ${producto.stock})`);
       }
 
       const itemSubtotal = producto.precio_venta * item.cantidad;
@@ -81,34 +57,41 @@ const createInvoice = async (req, res) => {
         producto_id: producto.id,
         cantidad: item.cantidad,
         precio_unitario: producto.precio_venta,
+        aplica_iva: producto.aplica_iva,
         subtotal: itemSubtotal,
         iva: itemIva
       });
 
-      // Descontar inventario
       await connection.query('UPDATE productos SET stock = stock - ? WHERE id = ?', [item.cantidad, producto.id]);
     }
 
     const descuentoFinal = descuento_global || 0;
-    const granTotal = (totalSubtotal + totalIva) - descuentoFinal;
 
-    // Generar un número de factura (Formato: FAC-YYMMDD-XXXX)
+    // 4. Calcular IGTF si el pago es en divisas o dólares
+    const metodos_divisas = ['divisas', 'dolares', 'dólares', 'usd', 'eur'];
+    const aplicaIGTF = metodos_divisas.includes((metodo_pago || '').toLowerCase());
+    const baseIGTF = totalSubtotal + totalIva - descuentoFinal;
+    const igtf_monto = aplicaIGTF ? parseFloat((baseIGTF * tasa_igtf).toFixed(2)) : 0;
+
+    const granTotal = parseFloat((baseIGTF + igtf_monto).toFixed(2));
+
+    // 5. Generar número de factura (FAC-YYMMDD-XXXX)
     const fecha = new Date();
     const [lastFactura] = await connection.query('SELECT id FROM facturas ORDER BY id DESC LIMIT 1');
     const nextId = lastFactura.length > 0 ? lastFactura[0].id + 1 : 1;
     const numero_factura = `FAC-${fecha.getFullYear().toString().slice(-2)}${String(fecha.getMonth()+1).padStart(2,'0')}${String(fecha.getDate()).padStart(2,'0')}-${String(nextId).padStart(4,'0')}`;
 
-    // Insertar encabezado de factura (incluyendo caja_id y ncf)
+    // 6. Insertar encabezado de factura
     const [facturaResult] = await connection.query(
       `INSERT INTO facturas 
-      (numero_factura, cliente_id, usuario_id, caja_id, ncf, ncf_tipo, subtotal, itbis, descuento, total, metodo_pago) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [numero_factura, cliente_id || null, usuario_id, caja_id, ncf_final, ncf_tipo || null, totalSubtotal, totalIva, descuentoFinal, granTotal, metodo_pago || 'efectivo']
+      (numero_factura, cliente_id, usuario_id, caja_id, subtotal, itbis, descuento, igtf_monto, total, metodo_pago) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [numero_factura, cliente_id || null, usuario_id, caja_id, totalSubtotal, totalIva, descuentoFinal, igtf_monto, granTotal, metodo_pago || 'efectivo']
     );
 
     const nuevaFacturaId = facturaResult.insertId;
 
-    // Insertar el detalle de la factura
+    // 7. Insertar detalle de la factura
     for (const pItem of processedItems) {
       await connection.query(
         `INSERT INTO factura_items (factura_id, producto_id, cantidad, precio_unitario, subtotal) 
@@ -118,12 +101,37 @@ const createInvoice = async (req, res) => {
     }
 
     await connection.commit();
+
+    // 8. Generar payload de impresión (sin bloquear la respuesta)
+    const facturaParaImprimir = {
+      numero_factura,
+      fecha: new Date().toISOString(),
+      metodo_pago,
+      subtotal: totalSubtotal,
+      itbis: totalIva,
+      iva: totalIva,
+      igtf_monto,
+      total: granTotal,
+      items: processedItems.map(pi => ({
+        ...pi,
+        producto_nombre: (items.find(i => i.producto_id === pi.producto_id) || {}).nombre || `Producto #${pi.producto_id}`
+      }))
+    };
+
+    const payloadImpresion = generarPayloadImpresion(facturaParaImprimir, {
+      ...empresa,
+      nombre: empresa.nombre,
+      rnc: empresa.rnc,
+    });
+
     res.status(201).json({ 
       success: true, 
-      message: 'Factura generada y stock actualizado exitosamente',
+      message: 'Factura generada exitosamente',
       numero_factura,
-      ncf: ncf_final,
-      factura_id: nuevaFacturaId
+      factura_id: nuevaFacturaId,
+      igtf_aplicado: aplicaIGTF,
+      igtf_monto,
+      impresion: payloadImpresion
     });
 
   } catch (err) {
@@ -167,18 +175,13 @@ const getInvoiceById = async (req, res) => {
     if (facturas.length === 0) return res.status(404).json({ error: 'Factura no encontrada' });
 
     const [items] = await pool.query(`
-      SELECT i.*, p.nombre as producto_nombre, p.codigo_barras
+      SELECT i.*, p.nombre as producto_nombre, p.codigo_barras, p.aplica_iva
       FROM factura_items i
       JOIN productos p ON i.producto_id = p.id
       WHERE i.factura_id = ?
     `, [id]);
 
-    const facturaCompleta = {
-      ...facturas[0],
-      items
-    };
-
-    res.json(facturaCompleta);
+    res.json({ ...facturas[0], items });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener el detalle de la factura' });
@@ -193,17 +196,14 @@ const voidInvoice = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Obtener la factura y verificar su estado
     const [facturas] = await connection.query('SELECT * FROM facturas WHERE id = ?', [id]);
     if (facturas.length === 0) throw new Error('Factura no encontrada');
     
     const factura = facturas[0];
     if (factura.estado === 'anulada') throw new Error('Esta factura ya ha sido anulada');
 
-    // 2. Obtener los productos vinculados a esta factura
     const [items] = await connection.query('SELECT * FROM factura_items WHERE factura_id = ?', [id]);
 
-    // 3. Reintegrar el stock a los productos
     for (const item of items) {
       await connection.query(
         'UPDATE productos SET stock = stock + ? WHERE id = ?',
@@ -211,7 +211,6 @@ const voidInvoice = async (req, res) => {
       );
     }
 
-    // 4. Marcar la factura como anulada
     await connection.query('UPDATE facturas SET estado = "anulada" WHERE id = ?', [id]);
 
     await connection.commit();

@@ -39,7 +39,6 @@ app.use('/api/compras', require('./src/routes/compraRoutes'));
 app.use('/api/contabilidad', require('./src/routes/contabilidadRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/caja', require('./src/routes/cajaRoutes'));
-app.use('/api/ncf', require('./src/routes/ncfRoutes'));
 app.use('/api/dashboard', require('./src/routes/dashboardRoutes'));
 
 // --- MANEJO DE RUTAS NO ENCONTRADAS (404) ---

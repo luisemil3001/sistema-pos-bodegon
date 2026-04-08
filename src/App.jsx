@@ -22,7 +22,6 @@ import InventoryPage from './pages/Inventory/InventoryPage';
 import AccountingPage from './pages/Accounting/AccountingPage';
 import UsersPage from './pages/Users/UsersPage';
 import CajaPage from './pages/Caja/CajaPage';
-import NCFPage from './pages/Settings/NCFPage';
 
 // Lógica para detectar si es Electron o Navegador (Evita la pantalla azul)
 const isElectron = navigator.userAgent.toLowerCase().includes(' electron');
@@ -59,11 +58,6 @@ function App() {
             <Route path="reportes" element={<ReportsPage />} />
             <Route path="usuarios" element={<UsersPage />} />
             <Route path="caja" element={<CajaPage />} />
-            <Route path="ncf" element={
-              <ProtectedRoute role="admin">
-                <NCFPage />
-              </ProtectedRoute>
-            } />
             <Route path="config" element={
               <ProtectedRoute role="admin">
                 <SettingsPage />

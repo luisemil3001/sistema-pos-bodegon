@@ -11,7 +11,10 @@ const SettingsPage = () => {
     telefono: '',
     email: '',
     itbis_tasa: 16,
-    tipo_impresora: 'pos'
+    igtf_tasa: 3,
+    tipo_impresora: 'pos',
+    marca_fiscal: 'generica',
+    puerto_impresora: 'COM1'
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -29,7 +32,10 @@ const SettingsPage = () => {
         telefono: settings.telefono || '',
         email: settings.email || '',
         itbis_tasa: settings.itbis_tasa || 16,
-        tipo_impresora: settings.tipo_impresora || 'pos'
+        igtf_tasa: settings.igtf_tasa || 3,
+        tipo_impresora: settings.tipo_impresora || 'pos',
+        marca_fiscal: settings.marca_fiscal || 'generica',
+        puerto_impresora: settings.puerto_impresora || 'COM1'
       });
     }
   }, [settings]);
@@ -38,7 +44,7 @@ const SettingsPage = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'itbis_tasa' ? parseFloat(value) : value
+      [name]: ['itbis_tasa', 'igtf_tasa'].includes(name) ? parseFloat(value) : value
     }));
   };
 
@@ -169,6 +175,21 @@ const SettingsPage = () => {
             </div>
 
             <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Tasa IGTF (%) *</label>
+              <input 
+                type="number" 
+                name="igtf_tasa"
+                step="0.01"
+                min="0"
+                value={formData.igtf_tasa} 
+                onChange={handleChange}
+                required
+                style={{ width: '100%' }}
+              />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Aplica para pagos en divisas.</p>
+            </div>
+
+            <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Tipo de Impresora *</label>
               <select 
                 name="tipo_impresora"
@@ -177,11 +198,46 @@ const SettingsPage = () => {
                 required
                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}
               >
-                <option value="pos">1. Impresora de Ticket (Estándar POS)</option>
+                <option value="pos">1. Impresora Miniterminal (POS Genérica)</option>
                 <option value="fiscal">2. Impresora Fiscal (Venezuela)</option>
               </select>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Determina cómo se procesa la impresión al cerrar una venta.</p>
             </div>
+
+            {formData.tipo_impresora === 'fiscal' && (
+              <>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Marca Fiscal *</label>
+                  <select 
+                    name="marca_fiscal"
+                    value={formData.marca_fiscal}
+                    onChange={handleChange}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  >
+                    <option value="tfhka">The Factory (TFHKA)</option>
+                    <option value="epson">Epson Fiscal</option>
+                    <option value="bematech">Bematech</option>
+                    <option value="generica">Genérica USB</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Puerto de Impresora *</label>
+                  <select 
+                    name="puerto_impresora"
+                    value={formData.puerto_impresora}
+                    onChange={handleChange}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  >
+                    <option value="COM1">COM1</option>
+                    <option value="COM2">COM2</option>
+                    <option value="COM3">COM3</option>
+                    <option value="COM4">COM4</option>
+                    <option value="COM5">COM5</option>
+                    <option value="USB">USB</option>
+                  </select>
+                </div>
+              </>
+            )}
 
           </div>
         </div>

@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import usePOS from '../../hooks/usePOS';
 import useCaja from '../../hooks/useCaja';
-import useNCF from '../../hooks/useNCF';
 import ReceiptModal from '../Invoices/ReceiptModal';
 import api from '../../api/api';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +26,6 @@ const POSPage = () => {
   } = usePOS();
 
   const { cajaAbierta } = useCaja();
-  const { fetchSequences } = useNCF();
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,29 +34,12 @@ const POSPage = () => {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
-  const [selectedNCF, setSelectedNCF] = useState('02'); 
-
-  useEffect(() => {
-    fetchSequences();
-  }, [fetchSequences]);
 
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [lastInvoiceId, setLastInvoiceId] = useState(null);
-
-  useEffect(() => {
-    if (selectedCustomer) {
-      if (selectedCustomer.rnc_cedula && selectedCustomer.rnc_cedula.replace(/\D/g, '').length >= 9) {
-        setSelectedNCF('01');
-      } else {
-        setSelectedNCF('02');
-      }
-    } else {
-      setSelectedNCF('02');
-    }
-  }, [selectedCustomer]);
 
   useEffect(() => {
     api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
@@ -90,10 +71,10 @@ const POSPage = () => {
       setProcessing(true);
       setSuccessMessage('');
       
-      const res = await processSale(metodo, selectedCustomer?.id || null, selectedNCF);
+      const res = await processSale(metodo, selectedCustomer?.id || null);
       
       if (res && res.success) {
-        setSuccessMessage(`Factura generada: ${res.data.numero_factura}`);
+        setSuccessMessage(`Factura generada: ${res.data.numero_factura}${res.data.igtf_aplicado ? ' (Con IGTF)' : ''}`);
         setLastInvoiceId(res.data.factura_id);
         
         setIsReceiptModalOpen(true);
@@ -323,16 +304,23 @@ const POSPage = () => {
             <button 
               onClick={() => handleProcess('efectivo')}
               disabled={cart.length === 0 || processing || !cajaAbierta}
-              style={{ flex: 1, padding: '0.75rem', backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing || !cajaAbierta ? 0.5 : 1 }}
+              style={{ flex: 1, padding: '0.75rem', backgroundColor: '#22c55e', color: 'white', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing || !cajaAbierta ? 0.5 : 1 }}
             >
               <Banknote size={18} /> {processing ? '...' : 'Efectivo'}
             </button>
             <button 
               onClick={() => handleProcess('tarjeta')}
               disabled={cart.length === 0 || processing || !cajaAbierta}
-              style={{ flex: 1, padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing || !cajaAbierta ? 0.5 : 1 }}
+              style={{ flex: 1, padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing || !cajaAbierta ? 0.5 : 1 }}
             >
               <CreditCard size={18} /> {processing ? '...' : 'Tarjeta'}
+            </button>
+            <button 
+              onClick={() => handleProcess('divisas')}
+              disabled={cart.length === 0 || processing || !cajaAbierta}
+              style={{ flex: 1, padding: '0.75rem', backgroundColor: '#fbbf24', color: '#1f2937', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing || !cajaAbierta ? 0.5 : 1 }}
+            >
+              <Banknote size={18} /> {processing ? '...' : 'Dólar (+IGTF)'}
             </button>
           </div>
         </div>

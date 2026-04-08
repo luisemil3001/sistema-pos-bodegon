@@ -8,7 +8,6 @@ const usePOS = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load products and settings on mount
   // Carga inicial de productos y configuraciones
   useEffect(() => {
     fetchInitialData();
@@ -21,7 +20,6 @@ const usePOS = () => {
         api.get('/products'),
         api.get('/settings')
       ]);
-      // Only products with stock
       // Solo productos con stock disponible
       setProducts(prodRes.data.filter(p => p.stock > 0)); 
       setSettings(setRes.data);
@@ -77,10 +75,9 @@ const usePOS = () => {
   
   const clearCart = () => setCart([]);
 
-  const getTotals = () => {
+  const getTotals = (metodoPago = 'efectivo') => {
     let subtotal = 0;
     let ivaTotal = 0;
-    // Default 16% (Venezuela)
     const tasaDecimal = settings ? parseFloat(settings.itbis_tasa) / 100 : 0.16;
 
     cart.forEach(item => {
@@ -93,29 +90,29 @@ const usePOS = () => {
       }
     });
 
-    // Precision handling for currency
-    // Manejo de precisión para moneda con 2 decimales
+    const isDivisas = ['divisas', 'dolares'].includes(metodoPago.toLowerCase());
+    const baseIgtf = subtotal + ivaTotal;
+    const igtfTasaDecimal = settings ? parseFloat(settings.igtf_tasa || 3) / 100 : 0.03;
+    const igtfTotal = isDivisas ? baseIgtf * igtfTasaDecimal : 0;
+
     return {
       subtotal: parseFloat(subtotal.toFixed(2)),
       iva: parseFloat(ivaTotal.toFixed(2)),
-      total: parseFloat((subtotal + ivaTotal).toFixed(2))
+      igtf: parseFloat(igtfTotal.toFixed(2)),
+      total: parseFloat((subtotal + ivaTotal + igtfTotal).toFixed(2))
     };
   };
 
-  const processSale = async (metodoPago = 'efectivo', clienteId = null, ncfTipo = null) => {
+  const processSale = async (metodoPago = 'efectivo', clienteId = null) => {
     if (cart.length === 0) return { success: false, message: 'El carrito está vacío' };
 
     try {
       setLoading(true);
-      const { subtotal, iva, total } = getTotals();
 
       const payload = {
         cliente_id: clienteId,
         metodo_pago: metodoPago,
-        ncf_tipo: ncfTipo,
-        subtotal,
-        iva,
-        total,
+        descuento_global: 0,
         items: cart.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad,
@@ -126,7 +123,6 @@ const usePOS = () => {
 
       const res = await api.post('/invoices', payload);
       
-      // Clear cart only on success
       // Limpiar carrito solo si la venta fue exitosa
       clearCart();
       await fetchInitialData(); 

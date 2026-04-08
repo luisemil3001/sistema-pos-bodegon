@@ -107,8 +107,13 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
                 <span>SUBTOTAL:</span> <span>${formatNum(invoice.subtotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>IVA (16%):</span> <span>${formatNum(getIVA())}</span>
+                <span>IVA ({settings?.itbis_tasa || 16}%):</span> <span>${formatNum(getIVA())}</span>
               </div>
+              {invoice?.igtf_monto > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#854d0e', fontWeight: '500' }}>
+                  <span>IGTF ({settings?.igtf_tasa || 3}%):</span> <span>${formatNum(invoice.igtf_monto)}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem' }}>
                 <span>TOTAL:</span> <span>${formatNum(invoice.total)}</span>
               </div>
@@ -116,6 +121,11 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
 
             <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '0.7rem' }}>
               <p>*** GRACIAS POR SU COMPRA ***</p>
+              {settings?.tipo_impresora === 'fiscal' && (
+                <p style={{ marginTop: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>
+                  -- COPIA - ORIGINAL EMITIDA POR IMPRESORA FISCAL --
+                </p>
+              )}
             </div>
           </>
         ) : (
