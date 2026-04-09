@@ -107,15 +107,19 @@ const createCreditNote = async (req, res) => {
 
     const payloadImpresion = generarPayloadNotaCredito(notaParaImprimir, empresa);
 
-    // Enviar a la impresora en segundo plano (no bloquea al usuario)
-    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
+    // Enviar a la impresora y ESPERAR resultado (Modo Síncrono)
+    const printerResult = await enviarAImpresoraFiscal(payloadImpresion);
 
     res.status(201).json({
       success: true,
-      message: `Nota de Crédito ${numero_nota} emitida correctamente`,
+      message: printerResult.success 
+        ? `Nota de Crédito ${numero_nota} emitida e impresa correctamente` 
+        : `Nota de Crédito emitida pero error de impresión: ${printerResult.error}`,
       numero_nota,
       nota_id: notaId,
-      impresion: payloadImpresion
+      impresion: payloadImpresion,
+      printer_success: printerResult.success,
+      printer_error: printerResult.error
     });
 
   } catch (err) {

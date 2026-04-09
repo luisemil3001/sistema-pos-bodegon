@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 
-const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
+const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers }) => {
   const [formData, setFormData] = useState({
     codigo_barras: '',
     nombre: '',
     descripcion: '',
     categoria_id: '',
+    proveedor_id: '',
     precio_costo: '',
     precio_venta: '',
     stock: '',
     min_stock: '5',
     unidad: 'unid',
-    aplica_iva: true
+    aplica_iva: true,
+    fecha_vencimiento: '',
+    proveedor_id: ''
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,7 +32,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
         stock: product.stock || '0',
         min_stock: product.min_stock || '5',
         unidad: product.unidad || 'unid',
-        aplica_iva: product.aplica_iva !== undefined ? product.aplica_iva : true
+        aplica_iva: product.aplica_iva !== undefined ? product.aplica_iva : true,
+        fecha_vencimiento: product.fecha_vencimiento ? new Date(product.fecha_vencimiento).toISOString().split('T')[0] : '',
+        proveedor_id: product.proveedor_id || ''
       });
     } else {
       setFormData({
@@ -42,7 +47,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
         stock: '0',
         min_stock: '5',
         unidad: 'unid',
-        aplica_iva: true
+        aplica_iva: true,
+        fecha_vencimiento: '',
+        proveedor_id: ''
       });
     }
     setError('');
@@ -77,7 +84,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
       precio_venta: parseFloat(formData.precio_venta),
       stock: parseInt(formData.stock) || 0,
       min_stock: parseInt(formData.min_stock) || 5,
-      aplica_iva: formData.aplica_iva
+      aplica_iva: formData.aplica_iva,
+      fecha_vencimiento: formData.fecha_vencimiento || null,
+      proveedor_id: formData.proveedor_id ? parseInt(formData.proveedor_id) : null
     };
 
     const result = await onSave(submitData);
@@ -172,6 +181,16 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
             </div>
 
             <div>
+              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Proveedor</label>
+              <select name="proveedor_id" value={formData.proveedor_id} onChange={handleChange} style={{ width: '100%' }}>
+                <option value="">-- Sin proveedor --</option>
+                {suppliers?.map(s => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Precio Costo</label>
               <input type="number" step="0.01" min="0" name="precio_costo" value={formData.precio_costo} onChange={handleChange} style={{ width: '100%' }} />
             </div>
@@ -189,6 +208,11 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories }) => {
             <div>
               <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Stock Mínimo</label>
               <input type="number" min="0" name="min_stock" value={formData.min_stock} onChange={handleChange} style={{ width: '100%' }} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Fecha de Vencimiento</label>
+              <input type="date" name="fecha_vencimiento" value={formData.fecha_vencimiento} onChange={handleChange} style={{ width: '100%' }} />
             </div>
 
             <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>

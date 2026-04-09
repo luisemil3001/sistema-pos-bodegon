@@ -13,4 +13,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor para manejar errores globales (ej: sesiones expiradas)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Si el servidor responde con 401 (No autorizado) o 403 (Token inválido/expirado)
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.warn('Sesión expirada o no autorizada. Redirigiendo al login...');
+      localStorage.removeItem('token');
+      // Solo redirigimos si no estamos ya en la página de login para evitar bucles
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

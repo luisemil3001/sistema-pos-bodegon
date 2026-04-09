@@ -2,15 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import usePurchases from '../../hooks/usePurchases';
+import PurchaseDetailModal from './PurchaseDetailModal';
 
 const PurchasesPage = () => {
-  const { purchases, loading, error, fetchPurchases } = usePurchases();
+  const { purchases, loading, error, fetchPurchases, fetchPurchaseDetail } = usePurchases();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPurchases();
   }, [fetchPurchases]);
+
+  const handleViewDetail = async (id) => {
+    setIsModalOpen(true);
+    setLoadingDetail(true);
+    const result = await fetchPurchaseDetail(id);
+    if (result.success) {
+      setSelectedPurchase(result.data);
+    } else {
+      alert(result.message);
+      setIsModalOpen(false);
+    }
+    setLoadingDetail(false);
+  };
 
   const filteredPurchases = purchases.filter(p => 
     p.numero_factura_proveedor.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -68,12 +85,13 @@ const PurchasesPage = () => {
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Proveedor</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Registrado Por</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Total</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPurchases.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                       No se encontraron compras.
                     </td>
                   </tr>
@@ -90,6 +108,15 @@ const PurchasesPage = () => {
                       <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--text-main)' }}>
                         ${parseFloat(p.total).toFixed(2)}
                       </td>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <button 
+                          onClick={() => handleViewDetail(p.id)}
+                          style={{ padding: '0.4rem', backgroundColor: 'transparent', color: 'var(--primary)', border: '1px solid var(--border)', borderRadius: '4px' }}
+                          title="Ver detalle"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -98,6 +125,13 @@ const PurchasesPage = () => {
           </div>
         )}
       </div>
+
+      <PurchaseDetailModal 
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setSelectedPurchase(null); }}
+        purchase={selectedPurchase}
+        loading={loadingDetail}
+      />
     </div>
   );
 };

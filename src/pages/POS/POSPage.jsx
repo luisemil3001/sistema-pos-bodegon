@@ -16,6 +16,7 @@ const POSPage = () => {
     settings, 
     cart, 
     loading, 
+    isPrinting,
     error, 
     addToCart, 
     updateQuantity, 
@@ -74,20 +75,23 @@ const POSPage = () => {
       const res = await processSale(metodo, selectedCustomer?.id || null);
       
       if (res && res.success) {
-        setSuccessMessage(`Factura generada: ${res.data.numero_factura}${res.data.igtf_aplicado ? ' (Con IGTF)' : ''}`);
-        setLastInvoiceId(res.data.factura_id);
+        if (res.printer_success) {
+          setSuccessMessage(`✅ Factura generada e impresa: ${res.data.numero_factura}`);
+        } else {
+          setSuccessMessage(`⚠️ Factura generada (${res.data.numero_factura}) pero FALLÓ LA IMPRESIÓN: ${res.printer_error}`);
+        }
         
+        setLastInvoiceId(res.data.factura_id);
         setIsReceiptModalOpen(true);
         setLoadingDetalle(true);
 
-        // Obtenemos los detalles de la factura para el modal
         const detailRes = await api.get(`/invoices/${res.data.factura_id}`);
         setSelectedInvoice(detailRes.data);
         
-        // Limpiamos selección de cliente
         setSelectedCustomer(null);
         setCustomerSearch('');
-        setTimeout(() => setSuccessMessage(''), 5000);
+        // El success message se queda más tiempo si hubo error de impresión
+        setTimeout(() => setSuccessMessage(''), res.printer_success ? 5000 : 10000);
       } else {
         alert(res?.message || 'Error al procesar la venta');
       }
@@ -336,6 +340,42 @@ const POSPage = () => {
         settings={settings}
         loadingDetalle={loadingDetalle}
       />
+
+      {isPrinting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-card)',
+            padding: '2rem',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--primary)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+            textAlign: 'center'
+          }}>
+            <Printer size={48} className="animate-pulse" style={{ color: 'var(--primary)' }} />
+            <h2 style={{ margin: 0 }}>Imprimiendo Ticket...</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Por favor, espere a que la impresora fiscal termine.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -124,17 +124,21 @@ const createInvoice = async (req, res) => {
       rnc: empresa.rnc,
     });
 
-    // Enviar a la impresora en segundo plano (no bloquea)
-    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
+    // Enviar a la impresora y ESPERAR resultado (Modo Síncrono)
+    const printerResult = await enviarAImpresoraFiscal(payloadImpresion);
 
     res.status(201).json({ 
       success: true, 
-      message: 'Factura generada exitosamente',
+      message: printerResult.success 
+        ? 'Factura generada e impresa exitosamente' 
+        : `Factura generada pero error de impresión: ${printerResult.error}`,
       numero_factura,
       factura_id: nuevaFacturaId,
       igtf_aplicado: aplicaIGTF,
       igtf_monto,
-      impresion: payloadImpresion
+      impresion: payloadImpresion,
+      printer_success: printerResult.success,
+      printer_error: printerResult.error
     });
 
   } catch (err) {
@@ -257,10 +261,14 @@ const reprintInvoice = async (req, res) => {
 
     const payloadImpresion = generarPayloadImpresion(facturaCompleta, empresa, { esCopia: true });
 
-    // Enviar a la impresora en segundo plano (para que escupa la copia)
-    enviarAImpresoraFiscal(payloadImpresion).catch(console.error);
+    // Enviar a la impresora y ESPERAR resultado (Modo Síncrono)
+    const printerResult = await enviarAImpresoraFiscal(payloadImpresion);
 
-    res.json({ success: true, impresion: payloadImpresion });
+    res.json({ 
+      success: printerResult.success, 
+      impresion: payloadImpresion,
+      printer_error: printerResult.error 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al generar la copia no fiscal' });

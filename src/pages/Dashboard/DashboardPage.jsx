@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     TrendingUp, Users, Package, AlertCircle, 
-    DollarSign, ShoppingBag, ArrowUpRight 
+    DollarSign, ShoppingBag, ArrowUpRight, Calendar 
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -16,6 +16,7 @@ import {
     LineElement,
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
+import { useNavigate } from 'react-router-dom';
 import useDashboard from '../../hooks/useDashboard';
 
 ChartJS.register(
@@ -32,6 +33,7 @@ ChartJS.register(
 
 const DashboardPage = () => {
     const { stats, charts, topProducts, loading, error } = useDashboard();
+    const navigate = useNavigate();
 
     if (loading && !stats) return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando análisis de negocio...</div>;
     if (error) return <div style={{ color: 'var(--danger)', padding: '2rem' }}>{error}</div>;
@@ -100,6 +102,16 @@ const DashboardPage = () => {
                     color="#ef4444" 
                     subtitle="Productos agotándose"
                     warning={(stats?.alerta_stock || 0) > 0}
+                    onClick={() => navigate('/inventario?filtro=stock')}
+                />
+                <StatCard 
+                    title="Alerta Vencimientos" 
+                    value={stats?.alerta_vencimiento || 0} 
+                    icon={<Calendar size={24} />} 
+                    color="#f59e0b" 
+                    subtitle="Vencidos o próximamente"
+                    warning={(stats?.alerta_vencimiento || 0) > 0}
+                    onClick={() => navigate('/inventario?filtro=vencimiento')}
                 />
             </div>
 
@@ -161,18 +173,24 @@ const DashboardPage = () => {
     );
 };
 
-const StatCard = ({ title, value, icon, color, subtitle, warning }) => (
-    <div style={{ 
-        backgroundColor: 'var(--bg-card)', 
-        padding: '1.5rem', 
-        borderRadius: 'var(--radius)', 
-        border: `1px solid ${warning ? '#ef4444' : 'var(--border)'}`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-        position: 'relative',
-        overflow: 'hidden'
-    }}>
+const StatCard = ({ title, value, icon, color, subtitle, warning, onClick }) => (
+    <div 
+        onClick={onClick}
+        style={{ 
+            backgroundColor: 'var(--bg-card)', 
+            padding: '1.5rem', 
+            borderRadius: 'var(--radius)', 
+            border: `1px solid ${warning ? '#ef4444' : 'var(--border)'}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            position: 'relative',
+            overflow: 'hidden',
+            cursor: onClick ? 'pointer' : 'default',
+            transition: 'all 0.2s ease',
+            opacity: onClick ? 1 : 0.9
+        }}
+    >
         <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.1, transform: 'scale(2.5)', color }}>
             {icon}
         </div>

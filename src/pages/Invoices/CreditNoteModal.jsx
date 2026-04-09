@@ -44,8 +44,16 @@ const CreditNoteModal = ({ isOpen, onClose, invoice, settings, onSuccess }) => {
       });
 
       if (res.data.success) {
-        onSuccess(res.data);
-        onClose();
+        // En lugar de cerrar de inmediato, podríamos informar si la impresión falló
+        if (res.data.printer_success) {
+          onSuccess(res.data);
+          onClose();
+        } else {
+          setError(`La nota se guardó pero FALLÓ LA IMPRESIÓN FISCAL: ${res.data.printer_error}`);
+          // Permitimos que el usuario vea el error, luego puede cerrar manualmente o intentar otra cosa
+          // Pero marcamos success en el padre para que refresque la lista
+          onSuccess(res.data);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Error al emitir la Nota de Crédito');

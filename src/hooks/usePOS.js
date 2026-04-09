@@ -6,6 +6,7 @@ const usePOS = () => {
   const [settings, setSettings] = useState(null);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState(null);
 
   // Carga inicial de productos y configuraciones
@@ -108,6 +109,7 @@ const usePOS = () => {
 
     try {
       setLoading(true);
+      setIsPrinting(true); // Activa el feedback de impresión
 
       const payload = {
         cliente_id: clienteId,
@@ -127,12 +129,18 @@ const usePOS = () => {
       clearCart();
       await fetchInitialData(); 
       
-      return { success: true, data: res.data };
+      return { 
+        success: true, 
+        data: res.data,
+        printer_success: res.data.printer_success,
+        printer_error: res.data.printer_error
+      };
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Error al procesar la venta';
       return { success: false, message: errorMsg };
     } finally {
       setLoading(false);
+      setIsPrinting(false);
     }
   };
 
@@ -141,6 +149,7 @@ const usePOS = () => {
     settings,
     cart,
     loading,
+    isPrinting,
     error,
     addToCart,
     updateQuantity,

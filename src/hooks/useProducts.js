@@ -4,6 +4,7 @@ import api from '../api/api';
 const useProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,6 +27,15 @@ const useProducts = () => {
       setCategories(res.data);
     } catch (err) {
       console.error('Error al cargar categorías', err);
+    }
+  }, []);
+
+  const fetchSuppliers = useCallback(async () => {
+    try {
+      const res = await api.get('/suppliers');
+      setSuppliers(res.data);
+    } catch (err) {
+      console.error('Error al cargar proveedores', err);
     }
   }, []);
 
@@ -62,10 +72,12 @@ const useProducts = () => {
   return {
     products,
     categories,
+    suppliers,
     loading,
     error,
     fetchProducts,
     fetchCategories,
+    fetchSuppliers,
     addProduct,
     updateProduct,
     deleteProduct

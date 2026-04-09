@@ -16,15 +16,15 @@ const getSettings = async (req, res) => {
 
 // Actualizar configuración del negocio
 const updateSettings = async (req, res) => {
-  const { nombre_empresa, rnc, direccion, telefono, email, itbis_tasa, tipo_impresora } = req.body;
+  const { nombre_empresa, rnc, direccion, telefono, email, itbis_tasa, tipo_impresora, margen_vencimiento } = req.body;
   
   try {
     const [result] = await pool.query(
       `UPDATE empresas SET 
       nombre = ?, rnc = ?, direccion = ?, telefono = ?, email = ?, 
-      itbis_tasa = ?, tipo_impresora = ? 
+      itbis_tasa = ?, tipo_impresora = ?, margen_vencimiento = ? 
       WHERE id = 1`,
-      [nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, itbis_tasa || 16, tipo_impresora || 'pos']
+      [nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, itbis_tasa || 16, tipo_impresora || 'pos', margen_vencimiento || 30]
     );
 
     if (result.affectedRows === 0) {

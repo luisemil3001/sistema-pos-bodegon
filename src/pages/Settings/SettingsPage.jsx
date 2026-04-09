@@ -14,7 +14,8 @@ const SettingsPage = () => {
     igtf_tasa: 3,
     tipo_impresora: 'pos',
     marca_fiscal: 'generica',
-    puerto_impresora: 'COM1'
+    puerto_impresora: 'COM1',
+    margen_vencimiento: 30
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -35,7 +36,8 @@ const SettingsPage = () => {
         igtf_tasa: settings.igtf_tasa || 3,
         tipo_impresora: settings.tipo_impresora || 'pos',
         marca_fiscal: settings.marca_fiscal || 'generica',
-        puerto_impresora: settings.puerto_impresora || 'COM1'
+        puerto_impresora: settings.puerto_impresora || 'COM1',
+        margen_vencimiento: settings.margen_vencimiento || 30
       });
     }
   }, [settings]);
@@ -44,7 +46,7 @@ const SettingsPage = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: ['itbis_tasa', 'igtf_tasa'].includes(name) ? parseFloat(value) : value
+      [name]: ['itbis_tasa', 'igtf_tasa', 'margen_vencimiento'].includes(name) ? parseFloat(value) : value
     }));
   };
 
@@ -187,6 +189,21 @@ const SettingsPage = () => {
                 style={{ width: '100%' }}
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Aplica para pagos en divisas.</p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Margen Alerta Vencimiento (días) *</label>
+              <input 
+                type="number" 
+                name="margen_vencimiento"
+                min="1"
+                max="365"
+                value={formData.margen_vencimiento} 
+                onChange={handleChange}
+                required
+                style={{ width: '100%' }}
+              />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Días de anticipación para las alertas de inventario.</p>
             </div>
 
             <div>

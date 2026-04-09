@@ -17,8 +17,15 @@ const getStats = async (req, res) => {
         // Clientes totales
         const [clienteRows] = await pool.query('SELECT COUNT(*) as count FROM clientes');
         
+        // Obtener margen de vencimiento
+        const [empresaRows] = await pool.query('SELECT margen_vencimiento FROM empresas LIMIT 1');
+        const margen = empresaRows[0]?.margen_vencimiento || 30;
+
         // Productos con bajo stock (< 5 unidades)
         const [stockRows] = await pool.query('SELECT COUNT(*) as count FROM productos WHERE stock < 5');
+
+        // Productos vencidos o por vencer (Próximos X días configurables)
+        const [vencRows] = await pool.query('SELECT COUNT(*) as count FROM productos WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL ? DAY)', [margen]);
 
         res.json({
             hoy: {
@@ -30,7 +37,8 @@ const getStats = async (req, res) => {
                 total: parseFloat(mesRows[0].total || 0)
             },
             clientes: clienteRows[0].count,
-            alerta_stock: stockRows[0].count
+            alerta_stock: stockRows[0].count,
+            alerta_vencimiento: vencRows[0].count
         });
     } catch (err) {
         console.error(err);

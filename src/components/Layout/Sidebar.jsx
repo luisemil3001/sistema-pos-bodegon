@@ -15,7 +15,9 @@ import {
   FileDigit,
   LayoutDashboard,
   Archive,
-  BookOpen
+  BookOpen,
+  RefreshCw,
+  RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,10 +29,12 @@ const Sidebar = () => {
     { name: 'Punto de Venta', path: '/pos', icon: <ShoppingCart size={20} /> },
     { name: 'Productos', path: '/productos', icon: <Package size={20} /> },
     { name: 'Inventario', path: '/inventario', icon: <Archive size={20} /> },
+    { name: 'Ajustes de Stock', path: '/ajustes-stock', icon: <RefreshCw size={20} /> },
     { name: 'Clientes', path: '/clientes', icon: <Users size={20} /> },
     { name: 'Facturas', path: '/facturas', icon: <FileText size={20} /> },
     { name: 'Proveedores', path: '/proveedores', icon: <Truck size={20} /> },
     { name: 'Compras', path: '/compras', icon: <ShoppingBag size={20} /> },
+    { name: 'Notas de Crédito', path: '/notas-credito', icon: <RotateCcw size={20} /> },
     { name: 'Contabilidad', path: '/contabilidad', icon: <BookOpen size={20} /> },
     { name: 'Control de Caja', path: '/caja', icon: <Lock size={20} /> },
     { name: 'Reportes', path: '/reportes', icon: <BarChart3 size={20} /> },

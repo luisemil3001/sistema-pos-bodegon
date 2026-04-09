@@ -16,6 +16,7 @@ const InvoicesPage = () => {
   const [isCreditNoteOpen, setIsCreditNoteOpen] = useState(false);
   const [selectedForNC, setSelectedForNC] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
@@ -26,14 +27,27 @@ const InvoicesPage = () => {
   const handleViewReceipt = async (id) => {
     setIsModalOpen(true);
     setLoadingDetalle(true);
+    setIsPrinting(true); // Iniciamos el modo impresión para la copia
+
     const result = await fetchInvoiceDetalle(id);
     if (result.success) {
       setSelectedInvoice(result.data);
+      
+      // Intentamos imprimir la copia síncronamente
+      try {
+        const printRes = await api.post(`/invoices/${id}/reprint`);
+        if (!printRes.data.success) {
+          alert(`La factura se cargó pero FALLÓ LA IMPRESIÓN: ${printRes.data.printer_error}`);
+        }
+      } catch (printErr) {
+        console.error("Error al intentar reimprimir:", printErr);
+      }
     } else {
       alert(result.message);
       setIsModalOpen(false);
     }
     setLoadingDetalle(false);
+    setIsPrinting(false);
   };
 
   const handleVoidInvoice = async (id, numero) => {
@@ -196,6 +210,28 @@ const InvoicesPage = () => {
         settings={settings}
         onSuccess={handleCreditNoteSuccess}
       />
+
+      {isPrinting && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+          flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, color: 'white', backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-card)', padding: '2rem',
+            borderRadius: 'var(--radius)', border: '1px solid var(--primary)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: '1rem', textAlign: 'center'
+          }}>
+            <Printer size={48} className="animate-pulse" style={{ color: 'var(--primary)' }} />
+            <h2 style={{ margin: 0 }}>Enviando a Impresora...</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Por favor, espere a que el hardware responda.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

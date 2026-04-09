@@ -6,7 +6,11 @@ import useProducts from '../../hooks/useProducts';
 import ProductModal from './ProductModal';
 
 const ProductsPage = () => {
-  const { products, categories, loading, error, fetchProducts, fetchCategories, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { 
+    products, categories, suppliers, loading, error, 
+    fetchProducts, fetchCategories, fetchSuppliers, 
+    addProduct, updateProduct, deleteProduct 
+  } = useProducts();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,7 +19,8 @@ const ProductsPage = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [fetchProducts, fetchCategories]);
+    fetchSuppliers();
+  }, [fetchProducts, fetchCategories, fetchSuppliers]);
 
   const handleOpenNew = () => {
     setEditingProduct(null);
@@ -245,6 +250,7 @@ const ProductsPage = () => {
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Código</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Nombre</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Categoría</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Proveedor</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Precio</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Stock</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
@@ -271,6 +277,11 @@ const ProductsPage = () => {
                           fontSize: '0.8rem' 
                         }}>
                           {p.categoria_nombre || 'Sin Categoría'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                          {p.proveedor_nombre || '-'}
                         </span>
                       </td>
                       <td style={{ padding: '1rem', fontWeight: '600' }}>
@@ -324,6 +335,7 @@ const ProductsPage = () => {
         product={editingProduct} 
         onSave={handleSaveModal}
         categories={categories}
+        suppliers={suppliers}
       />
     </div>
   );

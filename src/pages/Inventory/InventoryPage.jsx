@@ -1,17 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, AlertTriangle, ArrowDownUp } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, AlertTriangle, ArrowDownUp, Calendar, X, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import useSettings from '../../hooks/useSettings';
 import api from '../../api/api';
 
 const InventoryPage = () => {
+  const { settings, fetchSettings } = useSettings();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
+  const [searchParams] = useSearchParams();
+  const filtroParam = searchParams.get('filtro');
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    fetchSettings();
+  }, [fetchSettings]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -23,6 +31,59 @@ const InventoryPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const currentMargen = settings?.margen_vencimiento || 30;
+
+  const exportExpirations = async () => {
+    const nextVenc = products.filter(p => {
+      if (!p.fecha_vencimiento) return false;
+      const today = new Date();
+      const venc = new Date(p.fecha_vencimiento);
+      const diffDays = Math.ceil((venc - today) / (1000 * 60 * 60 * 24));
+      return diffDays <= currentMargen;
+    });
+
+    if (nextVenc.length === 0) return alert('No hay productos próximos a vencer para exportar');
+    
+    // ... rest of exportExpirations (using same currentMargen if needed below)
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Vencimientos');
+
+    worksheet.mergeCells('A1:E1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'REPORTE DE PRODUCTOS PRÓXIMOS A VENCER';
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC0392B' } };
+    titleCell.alignment = { horizontal: 'center' };
+
+    worksheet.getRow(3).values = ['Producto', 'Proveedor', 'Stock', 'Fecha Vencimiento', 'Estado'];
+    worksheet.getRow(3).font = { bold: true };
+    worksheet.columns = [
+      { key: 'nombre', width: 40 },
+      { key: 'proveedor', width: 30 },
+      { key: 'stock', width: 10 },
+      { key: 'vencimiento', width: 20 },
+      { key: 'status', width: 15 }
+    ];
+
+    nextVenc.forEach(p => {
+      const today = new Date();
+      const venc = new Date(p.fecha_vencimiento);
+      const isExpired = venc <= today;
+      
+      worksheet.addRow({
+        nombre: p.nombre,
+        proveedor: p.proveedor_nombre || 'S/N',
+        stock: p.stock,
+        vencimiento: venc.toLocaleDateString(),
+        status: isExpired ? 'VENCIDO' : 'PRONTO'
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Reporte_Vencimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const handleSort = (key) => {
@@ -56,11 +117,30 @@ const InventoryPage = () => {
     return sortableItems;
   }, [products, sortConfig]);
 
-  const filteredProducts = sortedProducts.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.codigo_barras && p.codigo_barras.includes(searchTerm)) ||
-    (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProducts = useMemo(() => {
+    return sortedProducts.filter(p => {
+      // Filtro por término de búsqueda
+      const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (p.codigo_barras && p.codigo_barras.includes(searchTerm)) ||
+        (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      if (!matchesSearch) return false;
+
+      // Filtro por parámetros de la URL (desde el Dashboard)
+      if (filtroParam === 'stock') {
+        return p.stock <= p.min_stock;
+      }
+      if (filtroParam === 'vencimiento') {
+        if (!p.fecha_vencimiento) return false;
+        const today = new Date();
+        const venc = new Date(p.fecha_vencimiento);
+        const diffDays = Math.ceil((venc - today) / (1000 * 60 * 60 * 24));
+        return diffDays <= currentMargen;
+      }
+
+      return true;
+    });
+  }, [sortedProducts, searchTerm, filtroParam]);
 
   // Totals calculation
   const totals = useMemo(() => {
@@ -68,15 +148,23 @@ const InventoryPage = () => {
     let totalCosto = 0;
     let totalVenta = 0;
     let lowStock = 0;
+    let expiredCount = 0;
 
     products.forEach(p => {
       totalItems += p.stock;
       totalCosto += (p.stock * p.precio_costo);
       totalVenta += (p.stock * p.precio_venta);
       if (p.stock <= p.min_stock) lowStock++;
+      
+      if (p.fecha_vencimiento) {
+        const today = new Date();
+        const venc = new Date(p.fecha_vencimiento);
+        const diffDays = Math.ceil((venc - today) / (1000 * 60 * 60 * 24));
+        if (diffDays <= currentMargen) expiredCount++;
+      }
     });
 
-    return { totalItems, totalCosto, totalVenta, lowStock, profit: totalVenta - totalCosto };
+    return { totalItems, totalCosto, totalVenta, lowStock, expiredCount, profit: totalVenta - totalCosto };
   }, [products]);
 
   return (
@@ -104,14 +192,17 @@ const InventoryPage = () => {
           <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${totals.totalVenta.toFixed(2)}</div>
         </div>
         <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', textTransform: 'uppercase' }}>Ganancia Proyectada</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#22c55e' }}>${totals.profit.toFixed(2)}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', textTransform: 'uppercase' }}>Próximos a Vencer</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: totals.expiredCount > 0 ? 'var(--danger)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {totals.expiredCount} {totals.expiredCount > 0 && <Calendar size={24} />}
+          </div>
         </div>
       </div>
 
       {error && <div style={{ color: 'var(--danger)' }}>{error}</div>}
 
-      <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: '1rem', flex: 1, alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input 
@@ -122,6 +213,45 @@ const InventoryPage = () => {
             style={{ width: '100%', paddingLeft: '2.5rem' }}
           />
         </div>
+
+        {filtroParam && (
+          <button 
+            onClick={() => window.location.href = '/inventario'}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              padding: '0.5rem 1rem', 
+              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+              color: 'var(--danger)',
+              border: '1px solid var(--danger)',
+              borderRadius: 'var(--radius)',
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            Filtro: {filtroParam === 'vencimiento' ? 'Vencimientos' : 'Bajo Stock'}
+            <X size={14} />
+          </button>
+        )}
+        </div>
+
+        <button 
+          onClick={exportExpirations}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            padding: '0.6rem 1.25rem', 
+            backgroundColor: '#C0392B', 
+            color: 'white',
+            fontWeight: '600',
+            borderRadius: 'var(--radius)'
+          }}
+        >
+          <Download size={18} />
+          Reporte Vencimientos
+        </button>
       </div>
 
       {/* Data Table */}
@@ -148,6 +278,9 @@ const InventoryPage = () => {
                   <th onClick={() => handleSort('precio_venta')} style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', cursor: 'pointer', textAlign: 'right' }}>
                     Precio V. <ArrowDownUp size={12}/>
                   </th>
+                  <th onClick={() => handleSort('fecha_vencimiento')} style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', cursor: 'pointer', textAlign: 'center' }}>
+                    Vencimiento <ArrowDownUp size={12}/>
+                  </th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Valor Total</th>
                 </tr>
               </thead>
@@ -171,6 +304,31 @@ const InventoryPage = () => {
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--text-muted)' }}>${parseFloat(p.precio_costo).toFixed(2)}</td>
                         <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)' }}>${parseFloat(p.precio_venta).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          {p.fecha_vencimiento ? (
+                            (() => {
+                              const today = new Date();
+                              const venc = new Date(p.fecha_vencimiento);
+                              const diffDays = Math.ceil((venc - today) / (1000 * 60 * 60 * 24));
+                              let color = 'var(--text-main)';
+                              if (diffDays <= 0) color = 'var(--danger)';
+                              else if (diffDays <= currentMargen) color = '#fbbf24'; // Orange
+                              
+                              return (
+                                <span style={{ 
+                                  color, 
+                                  fontWeight: diffDays <= currentMargen ? 'bold' : 'normal',
+                                  fontSize: '0.85rem'
+                                }}>
+                                  {venc.toLocaleDateString()}
+                                  {diffDays <= 0 && ' (VENCIDO)'}
+                                </span>
+                              );
+                            })()
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sin fecha</span>
+                          )}
+                        </td>
                         <td style={{ padding: '1rem', textAlign: 'right', fontWeight: '600' }}>${(p.stock * p.precio_costo).toFixed(2)}</td>
                       </tr>
                     );
