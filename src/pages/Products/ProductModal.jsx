@@ -14,8 +14,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
     min_stock: '5',
     unidad: 'unid',
     aplica_iva: true,
+    es_pesable: false,
     fecha_vencimiento: '',
-    proveedor_id: ''
+    //proveedor_id: ''
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,6 +34,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
         min_stock: product.min_stock || '5',
         unidad: product.unidad || 'unid',
         aplica_iva: product.aplica_iva !== undefined ? product.aplica_iva : true,
+        es_pesable: product.es_pesable || false,
         fecha_vencimiento: product.fecha_vencimiento ? new Date(product.fecha_vencimiento).toISOString().split('T')[0] : '',
         proveedor_id: product.proveedor_id || ''
       });
@@ -48,6 +50,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
         min_stock: '5',
         unidad: 'unid',
         aplica_iva: true,
+        es_pesable: false,
         fecha_vencimiento: '',
         proveedor_id: ''
       });
@@ -59,44 +62,45 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!formData.nombre || !formData.precio_venta) {
       setError('El nombre y el precio de venta son obligatorios');
       return;
     }
 
     setSaving(true);
-    
+
     // Convertir formatos numéricos
     const submitData = {
       ...formData,
       categoria_id: formData.categoria_id ? parseInt(formData.categoria_id) : null,
       precio_costo: parseFloat(formData.precio_costo) || 0,
       precio_venta: parseFloat(formData.precio_venta),
-      stock: parseInt(formData.stock) || 0,
-      min_stock: parseInt(formData.min_stock) || 5,
+      stock: parseFloat(formData.stock) || 0,
+      min_stock: parseFloat(formData.min_stock) || 1,
       aplica_iva: formData.aplica_iva,
+      es_pesable: formData.es_pesable,
       fecha_vencimiento: formData.fecha_vencimiento || null,
       proveedor_id: formData.proveedor_id ? parseInt(formData.proveedor_id) : null
     };
 
     const result = await onSave(submitData);
-    
+
     if (result.success) {
       onClose();
     } else {
       setError(result.message);
     }
-    
+
     setSaving(false);
   };
 
@@ -122,22 +126,22 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
         flexDirection: 'column',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}>
-        
+
         {/* Header */}
-        <div style={{ 
-          padding: '1.5rem', 
-          borderBottom: '1px solid var(--border)', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <h2 style={{ fontSize: '1.25rem', color: 'var(--text-main)', margin: 0 }}>
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
-          <button onClick={onClose} style={{ 
-            background: 'transparent', 
-            color: 'var(--text-muted)', 
-            display: 'flex', 
+          <button onClick={onClose} style={{
+            background: 'transparent',
+            color: 'var(--text-muted)',
+            display: 'flex',
             alignItems: 'center',
             padding: '0.25rem'
           }}>
@@ -154,7 +158,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
           )}
 
           <form id="productForm" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            
+
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Nombre del Producto *</label>
               <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} style={{ width: '100%' }} autoFocus />
@@ -215,32 +219,39 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
               <input type="date" name="fecha_vencimiento" value={formData.fecha_vencimiento} onChange={handleChange} style={{ width: '100%' }} />
             </div>
 
-            <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <input type="checkbox" id="aplica_iva" name="aplica_iva" checked={formData.aplica_iva} onChange={handleChange} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-              <label htmlFor="aplica_iva" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>Aplica Impuesto (IVA)</label>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '2rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="aplica_iva" name="aplica_iva" checked={formData.aplica_iva} onChange={handleChange} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                <label htmlFor="aplica_iva" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>Aplica Impuesto (IVA)</label>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="es_pesable" name="es_pesable" checked={formData.es_pesable} onChange={handleChange} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                <label htmlFor="es_pesable" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none', color: 'var(--primary)', fontWeight: 'bold' }}>Vender por Peso (Balanza/Kg)</label>
+              </div>
             </div>
           </form>
         </div>
 
         {/* Footer */}
-        <div style={{ 
-          padding: '1rem 1.5rem', 
-          borderTop: '1px solid var(--border)', 
-          display: 'flex', 
-          justifyContent: 'flex-end', 
-          gap: '1rem' 
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '1rem'
         }}>
-          <button type="button" onClick={onClose} style={{ 
-            padding: '0.6rem 1.25rem', 
-            background: 'transparent', 
+          <button type="button" onClick={onClose} style={{
+            padding: '0.6rem 1.25rem',
+            background: 'transparent',
             color: 'var(--text-main)',
-            border: '1px solid var(--border)' 
+            border: '1px solid var(--border)'
           }}>
             Cancelar
           </button>
-          <button type="submit" form="productForm" disabled={saving} style={{ 
-            padding: '0.6rem 1.25rem', 
-            backgroundColor: 'var(--primary)', 
+          <button type="submit" form="productForm" disabled={saving} style={{
+            padding: '0.6rem 1.25rem',
+            backgroundColor: 'var(--primary)',
             color: 'var(--bg-main)',
             fontWeight: '600',
             display: 'flex',

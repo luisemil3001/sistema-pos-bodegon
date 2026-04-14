@@ -23,7 +23,15 @@ const useReports = () => {
     stats,
     loading,
     error,
-    fetchStats
+    fetchStats,
+    fetchShifts: async (filters) => {
+      const res = await api.get('/reports/audit/shifts', { params: filters });
+      return res.data;
+    },
+    fetchAdjustments: async () => {
+      const res = await api.get('/reports/audit/adjustments');
+      return res.data;
+    }
   };
 };
 

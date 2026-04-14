@@ -17,7 +17,9 @@ import {
   Archive,
   BookOpen,
   RefreshCw,
-  RotateCcw
+  RotateCcw,
+  Monitor,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,19 +34,22 @@ const Sidebar = () => {
     { name: 'Ajustes de Stock', path: '/ajustes-stock', icon: <RefreshCw size={20} /> },
     { name: 'Clientes', path: '/clientes', icon: <Users size={20} /> },
     { name: 'Facturas', path: '/facturas', icon: <FileText size={20} /> },
+    { name: 'Cotizaciones', path: '/cotizaciones', icon: <FileDigit size={20} /> },
     { name: 'Proveedores', path: '/proveedores', icon: <Truck size={20} /> },
     { name: 'Compras', path: '/compras', icon: <ShoppingBag size={20} /> },
     { name: 'Notas de Crédito', path: '/notas-credito', icon: <RotateCcw size={20} /> },
     { name: 'Contabilidad', path: '/contabilidad', icon: <BookOpen size={20} /> },
     { name: 'Control de Caja', path: '/caja', icon: <Lock size={20} /> },
     { name: 'Reportes', path: '/reportes', icon: <BarChart3 size={20} /> },
+    { name: 'Auditoría', path: '/auditoria', icon: <ShieldCheck size={20} /> },
     { name: 'Gestión Usuarios', path: '/usuarios', icon: <Users2 size={20} /> },
+    { name: 'Estaciones (Cajas)', path: '/estaciones', icon: <Monitor size={20} /> },
     { name: 'Configuración', path: '/config', icon: <Settings size={20} /> },
   ];
 
   const menuItems = user?.rol === 'admin'
     ? allMenuItems
-    : allMenuItems.filter(item => !['/config'].includes(item.path));
+    : allMenuItems.filter(item => !['/config', '/estaciones', '/usuarios', '/auditoria'].includes(item.path));
 
   return (
     <aside style={{

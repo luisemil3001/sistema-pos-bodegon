@@ -24,6 +24,9 @@ import UsersPage from './pages/Users/UsersPage';
 import CajaPage from './pages/Caja/CajaPage';
 import StockAdjustmentsPage from './pages/Inventory/StockAdjustmentsPage';
 import CreditNotesPage from './pages/Invoices/CreditNotesPage';
+import CotizacionesPage from './pages/Cotizaciones/CotizacionesPage';
+import WorkstationsPage from './pages/Caja/WorkstationsPage';
+import AuditPage from './pages/Reports/AuditPage';
 
 // Lógica para detectar si es Electron o Navegador (Evita la pantalla azul)
 const isElectron = navigator.userAgent.toLowerCase().includes(' electron');
@@ -52,6 +55,7 @@ function App() {
             <Route path="productos" element={<ProductsPage />} />
             <Route path="clientes" element={<CustomersPage />} />
             <Route path="facturas" element={<InvoicesPage />} />
+            <Route path="cotizaciones" element={<CotizacionesPage />} />
             <Route path="proveedores" element={<SuppliersPage />} />
             <Route path="compras" element={<PurchasesPage />} />
             <Route path="compras/nueva" element={<NewPurchasePage />} />
@@ -60,8 +64,18 @@ function App() {
             <Route path="reportes" element={<ReportsPage />} />
             <Route path="usuarios" element={<UsersPage />} />
             <Route path="caja" element={<CajaPage />} />
+            <Route path="auditoria" element={
+               <ProtectedRoute role="admin">
+                  <AuditPage />
+               </ProtectedRoute>
+            } />
             <Route path="ajustes-stock" element={<StockAdjustmentsPage />} />
             <Route path="notas-credito" element={<CreditNotesPage />} />
+            <Route path="estaciones" element={
+               <ProtectedRoute role="admin">
+                  <WorkstationsPage />
+               </ProtectedRoute>
+            } />
             <Route path="config" element={
               <ProtectedRoute role="admin">
                 <SettingsPage />

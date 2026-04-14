@@ -27,6 +27,9 @@ const getStats = async (req, res) => {
         // Productos vencidos o por vencer (Próximos X días configurables)
         const [vencRows] = await pool.query('SELECT COUNT(*) as count FROM productos WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL ? DAY)', [margen]);
 
+        // Cotizaciones pendientes
+        const [cotRows] = await pool.query('SELECT COUNT(*) as count FROM cotizaciones WHERE estado = "pendiente"');
+
         res.json({
             hoy: {
                 total: parseFloat(hoyRows[0].total || 0),
@@ -38,7 +41,8 @@ const getStats = async (req, res) => {
             },
             clientes: clienteRows[0].count,
             alerta_stock: stockRows[0].count,
-            alerta_vencimiento: vencRows[0].count
+            alerta_vencimiento: vencRows[0].count,
+            cotizaciones_pendientes: cotRows[0].count
         });
     } catch (err) {
         console.error(err);

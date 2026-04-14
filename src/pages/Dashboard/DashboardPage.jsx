@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     TrendingUp, Users, Package, AlertCircle, 
-    DollarSign, ShoppingBag, ArrowUpRight, Calendar 
+    DollarSign, ShoppingBag, ArrowUpRight, Calendar, FileDigit
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -104,14 +104,15 @@ const DashboardPage = () => {
                     warning={(stats?.alerta_stock || 0) > 0}
                     onClick={() => navigate('/inventario?filtro=stock')}
                 />
-                <StatCard 
-                    title="Alerta Vencimientos" 
-                    value={stats?.alerta_vencimiento || 0} 
-                    icon={<Calendar size={24} />} 
-                    color="#f59e0b" 
-                    subtitle="Vencidos o próximamente"
-                    warning={(stats?.alerta_vencimiento || 0) > 0}
                     onClick={() => navigate('/inventario?filtro=vencimiento')}
+                />
+                <StatCard 
+                    title="Cotizaciones" 
+                    value={stats?.cotizaciones_pendientes || 0} 
+                    icon={<FileDigit size={24} />} 
+                    color="#6366f1" 
+                    subtitle="Pendientes por facturar"
+                    onClick={() => navigate('/cotizaciones')}
                 />
             </div>
 

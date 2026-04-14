@@ -46,4 +46,55 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats };
+// Historial de cierres de caja (Arqueos)
+const getAuditShifts = async (req, res) => {
+  const { startDate, endDate, estacionId } = req.query;
+  try {
+    let query = `
+      SELECT c.*, u.nombre as usuario_nombre, e.nombre as estacion_nombre 
+      FROM cajas c
+      LEFT JOIN usuarios u ON c.usuario_id = u.id
+      LEFT JOIN estaciones_trabajo e ON c.estacion_id = e.id
+      WHERE c.estado = 'cerrada'
+    `;
+    const params = [];
+
+    if (startDate && endDate) {
+      query += ` AND c.fecha_apertura BETWEEN ? AND ? `;
+      params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    }
+
+    if (estacionId) {
+      query += ` AND c.estacion_id = ? `;
+      params.push(estacionId);
+    }
+
+    query += ` ORDER BY c.fecha_cierre DESC `;
+
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener historial de arqueos' });
+  }
+};
+
+// Historial de ajustes de inventario
+const getAuditAdjustments = async (req, res) => {
+  try {
+    const query = `
+      SELECT a.*, p.nombre as producto_nombre, u.nombre as usuario_nombre 
+      FROM ajustes_stock a
+      JOIN productos p ON a.producto_id = p.id
+      JOIN usuarios u ON a.usuario_id = u.id
+      ORDER BY a.fecha DESC LIMIT 100
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener ajustes de auditoría' });
+  }
+};
+
+module.exports = { getDashboardStats, getAuditShifts, getAuditAdjustments };

@@ -32,7 +32,7 @@ const getProductById = async (req, res) => {
 
 // Crear producto
 const createProduct = async (req, res) => {
-  const { codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, min_stock, unidad, aplica_iva, fecha_vencimiento } = req.body;
+  const { codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, min_stock, unidad, aplica_iva, fecha_vencimiento, es_pesable } = req.body;
   
   if (!nombre || !precio_venta) {
     return res.status(400).json({ error: 'El nombre y precio de venta son obligatorios' });
@@ -49,9 +49,9 @@ const createProduct = async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO productos 
-      (codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, fecha_vencimiento, min_stock, unidad, aplica_iva) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [codigo_barras || null, nombre, descripcion || null, categoria_id || null, proveedor_id || null, precio_costo || 0, precio_venta, stock || 0, fecha_vencimiento || null, min_stock || 5, unidad || 'unid', aplica_iva !== undefined ? aplica_iva : true]
+      (codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, fecha_vencimiento, min_stock, unidad, aplica_iva, es_pesable) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [codigo_barras || null, nombre, descripcion || null, categoria_id || null, proveedor_id || null, precio_costo || 0, precio_venta, stock || 0, fecha_vencimiento || null, min_stock || 5, unidad || 'unid', aplica_iva !== undefined ? aplica_iva : true, es_pesable || false]
     );
     
     res.status(201).json({ id: result.insertId, message: 'Producto creado exitosamente' });
@@ -63,7 +63,7 @@ const createProduct = async (req, res) => {
 
 // Actualizar producto
 const updateProduct = async (req, res) => {
-  const { codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, min_stock, unidad, aplica_iva, fecha_vencimiento } = req.body;
+  const { codigo_barras, nombre, descripcion, categoria_id, proveedor_id, precio_costo, precio_venta, stock, min_stock, unidad, aplica_iva, fecha_vencimiento, es_pesable } = req.body;
   
   if (!nombre || !precio_venta) {
     return res.status(400).json({ error: 'El nombre y precio de venta son obligatorios' });
@@ -81,9 +81,9 @@ const updateProduct = async (req, res) => {
     const [result] = await pool.query(
       `UPDATE productos SET 
       codigo_barras = ?, nombre = ?, descripcion = ?, categoria_id = ?, proveedor_id = ?, 
-      precio_costo = ?, precio_venta = ?, stock = ?, fecha_vencimiento = ?, min_stock = ?, unidad = ?, aplica_iva = ? 
+      precio_costo = ?, precio_venta = ?, stock = ?, fecha_vencimiento = ?, min_stock = ?, unidad = ?, aplica_iva = ?, es_pesable = ? 
       WHERE id = ?`,
-      [codigo_barras || null, nombre, descripcion || null, categoria_id || null, proveedor_id || null, precio_costo || 0, precio_venta, stock || 0, fecha_vencimiento || null, min_stock || 5, unidad || 'unid', aplica_iva !== undefined ? aplica_iva : true, req.params.id]
+      [codigo_barras || null, nombre, descripcion || null, categoria_id || null, proveedor_id || null, precio_costo || 0, precio_venta, stock || 0, fecha_vencimiento || null, min_stock || 5, unidad || 'unid', aplica_iva !== undefined ? aplica_iva : true, es_pesable || false, req.params.id]
     );
 
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Producto no encontrado' });

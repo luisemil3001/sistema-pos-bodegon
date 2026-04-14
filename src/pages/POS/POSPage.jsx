@@ -23,7 +23,11 @@ const POSPage = () => {
     removeFromCart, 
     clearCart, 
     getTotals, 
-    processSale 
+    processSale,
+    saveCotizacion,
+    loadCotizacion,
+    discardCotizacion,
+    cotizacionId
   } = usePOS();
 
   const { cajaAbierta } = useCaja();
@@ -45,6 +49,22 @@ const POSPage = () => {
   useEffect(() => {
     api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const importData = localStorage.getItem('pos_cotizacion_import');
+    if (importData) {
+      try {
+        const parsed = JSON.parse(importData);
+        loadCotizacion(parsed.items, parsed.id);
+        if (parsed.cliente_id) {
+          setSelectedCustomer({ id: parsed.cliente_id, nombre: parsed.cliente_nombre });
+        }
+        localStorage.removeItem('pos_cotizacion_import');
+      } catch (err) {
+        console.error('Error importando cotización', err);
+      }
+    }
+  }, []); // Solo al montar
 
   const filteredCustomers = useMemo(() => {
     if (!customerSearch) return customers.slice(0, 10);
@@ -104,6 +124,26 @@ const POSPage = () => {
     }
   };
 
+  const handleSaveCotizacion = async () => {
+    setProcessing(true);
+    setSuccessMessage('');
+    const res = await saveCotizacion(selectedCustomer?.id || null);
+    
+    if (res && res.success) {
+      setSuccessMessage(`✅ Cotización generada con éxito: ${res.data.numero_cotizacion}`);
+      setSelectedCustomer(null);
+      setCustomerSearch('');
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } else {
+      alert(res?.message || 'Error al guardar la cotización');
+    }
+    setProcessing(false);
+  };
+
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [pendingWeightProduct, setPendingWeightProduct] = useState(null);
+  const [manualWeight, setManualWeight] = useState('');
+
   const handleViewReceiptFromHistory = async (id) => {
     setIsReceiptModalOpen(true);
     setLoadingDetalle(true);
@@ -115,6 +155,65 @@ const POSPage = () => {
       setIsReceiptModalOpen(false);
     }
     setLoadingDetalle(false);
+  };
+
+  const parseScaleBarcode = (code) => {
+    // Patrón estándar: 20 (2) + Producto (5) + Peso en gramos (5) + Check (1)
+    if (code.length === 13 && code.startsWith('20')) {
+      const productIdCode = code.substring(2, 7);
+      const weightGrams = parseInt(code.substring(7, 12));
+      const weightKg = weightGrams / 1000;
+      return { productIdCode, weightKg };
+    }
+    return null;
+  };
+
+  const handleBarcodeScan = (code) => {
+    const scaleData = parseScaleBarcode(code);
+    if (scaleData) {
+      // Buscar por código interno (los 5 dígitos)
+      const product = products.find(p => p.codigo_barras === scaleData.productIdCode || p.id.toString() === parseInt(scaleData.productIdCode).toString());
+      if (product) {
+        addToCart({ ...product, cantidad: scaleData.weightKg });
+        setSearchTerm('');
+        return true;
+      }
+    }
+
+    const product = products.find(p => p.codigo_barras === code);
+    if (product) {
+      if (product.es_pesable) {
+        setPendingWeightProduct(product);
+        setIsWeightModalOpen(true);
+      } else {
+        addToCart(product);
+      }
+      setSearchTerm('');
+      return true;
+    }
+    return false;
+  };
+
+  const addProductWithWeight = () => {
+    const weight = parseFloat(manualWeight);
+    if (isNaN(weight) || weight <= 0) {
+      alert('Ingrese un peso válido');
+      return;
+    }
+    addToCart({ ...pendingWeightProduct, cantidad: weight });
+    setIsWeightModalOpen(false);
+    setPendingWeightProduct(null);
+    setManualWeight('');
+    setSearchTerm('');
+  };
+
+  const handleProductClick = (p) => {
+    if (p.es_pesable) {
+      setPendingWeightProduct(p);
+      setIsWeightModalOpen(true);
+    } else {
+      addToCart(p);
+    }
   };
 
   return (
@@ -129,6 +228,15 @@ const POSPage = () => {
             placeholder="Buscar producto por nombre o escanear código de barras..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchTerm) {
+                const found = handleBarcodeScan(searchTerm);
+                if (!found && filteredProducts.length === 1) {
+                   handleProductClick(filteredProducts[0]);
+                   setSearchTerm('');
+                }
+              }
+            }}
             style={{ width: '100%', paddingLeft: '3rem', fontSize: '1.1rem', padding: '1rem 1rem 1rem 3rem', backgroundColor: 'var(--bg-main)', border: '2px solid var(--border)' }}
             autoFocus
           />
@@ -146,7 +254,7 @@ const POSPage = () => {
             filteredProducts.map(p => (
               <button 
                 key={p.id} 
-                onClick={() => addToCart(p)}
+                onClick={() => handleProductClick(p)}
                 style={{
                   backgroundColor: 'var(--bg-main)',
                   border: '1px solid var(--border)',
@@ -175,7 +283,17 @@ const POSPage = () => {
       <div style={{ flex: '4', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-sidebar)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', height: '100%' }}>
         
         <div style={{ flexShrink: 0, padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-main)' }}>
-          <h2 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-main)', margin: 0 }}><ShoppingCart size={18} /> Pedido</h2>
+          <h2 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-main)', margin: 0 }}>
+            <ShoppingCart size={18} /> Pedido
+            {cotizacionId && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{fontSize: '0.75rem', backgroundColor: 'var(--primary)', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', marginLeft: '0.5rem'}}>F-COT</span>
+                <button onClick={discardCotizacion} style={{ backgroundColor: 'transparent', color: 'var(--danger)', padding: '0.2rem', border: '1px solid var(--danger)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cancelar importación">
+                   <X size={10} />
+                </button>
+              </div>
+            )}
+          </h2>
           <div style={{ display: 'flex', gap: '0.4rem' }}>
             {lastInvoiceId && (
               <button 
@@ -261,16 +379,16 @@ const POSPage = () => {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.1rem' }}>{item.nombre}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '0.4rem' }}>
-                      <span>${parseFloat(item.precio_venta).toFixed(2)} x {item.cantidad}</span>
+                      <span>${parseFloat(item.precio_venta).toFixed(2)} x {item.es_pesable ? item.cantidad.toFixed(3) : item.cantidad} {item.es_pesable ? 'kg' : 'unid'}</span>
                       {item.aplica_iva && <span style={{ color: 'var(--primary)', fontWeight: '500' }}>+IVA</span>}
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-input)', padding: '0.25rem', borderRadius: 'var(--radius)' }}>
-                      <button onClick={() => updateQuantity(item.id, -1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Minus size={14} /></button>
-                      <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}>{item.cantidad}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Plus size={14} /></button>
+                      <button onClick={() => updateQuantity(item.id, item.es_pesable ? -0.1 : -1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Minus size={14} /></button>
+                      <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}>{item.es_pesable ? item.cantidad.toFixed(3) : item.cantidad}</span>
+                      <button onClick={() => updateQuantity(item.id, item.es_pesable ? 0.1 : 1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Plus size={14} /></button>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: '100px' }}>
                       <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.1rem' }}>
@@ -327,6 +445,18 @@ const POSPage = () => {
               <Banknote size={18} /> {processing ? '...' : 'Dólar (+IGTF)'}
             </button>
           </div>
+          
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <button 
+              onClick={handleSaveCotizacion}
+              disabled={cart.length === 0 || processing}
+              style={{ flex: 1, padding: '0.75rem', backgroundColor: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', opacity: cart.length === 0 || processing ? 0.5 : 1, transition: 'all 0.2s', ...(!cart.length || processing ? {} : { cursor: 'pointer' }) }}
+              onMouseOver={(e) => { if (cart.length > 0 && !processing) { e.currentTarget.style.backgroundColor = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; } }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-main)'; }}
+            >
+              <FileDigit size={18} /> Guardar Presupuesto / Cotización
+            </button>
+          </div>
         </div>
       </div>
 
@@ -340,6 +470,30 @@ const POSPage = () => {
         settings={settings}
         loadingDetalle={loadingDetalle}
       />
+
+      {/* Modal para ingresar peso manualmente */}
+      {isWeightModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: 'var(--radius)', width: '350px', border: '2px solid var(--primary)', textAlign: 'center' }}>
+            <h2 style={{ marginBottom: '1rem' }}>{pendingWeightProduct?.nombre}</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Ingrese el peso en Kilogramos (Kg)</p>
+            <input 
+              type="number" 
+              step="0.001" 
+              autoFocus 
+              value={manualWeight}
+              onChange={(e) => setManualWeight(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addProductWithWeight()}
+              style={{ fontSize: '2rem', textAlign: 'center', width: '100%', marginBottom: '1.5rem', padding: '0.5rem' }}
+              placeholder="0.000"
+            />
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => { setIsWeightModalOpen(false); setManualWeight(''); }} style={{ flex: 1, padding: '1rem', background: 'transparent', color: 'white', border: '1px solid var(--border)' }}>Cancelar</button>
+              <button onClick={addProductWithWeight} style={{ flex: 1, padding: '1rem', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 'bold' }}>Agregar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isPrinting && (
         <div style={{

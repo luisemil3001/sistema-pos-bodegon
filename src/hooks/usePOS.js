@@ -8,6 +8,7 @@ const usePOS = () => {
   const [loading, setLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState(null);
+  const [cotizacionId, setCotizacionId] = useState(null);
 
   // Carga inicial de productos y configuraciones
   useEffect(() => {
@@ -33,18 +34,19 @@ const usePOS = () => {
   };
 
   const addToCart = (product) => {
+    const qtyToAdd = product.cantidad || 1;
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        if (existing.cantidad >= product.stock) {
+        if (parseFloat(existing.cantidad) + parseFloat(qtyToAdd) > parseFloat(product.stock)) {
           alert('No hay suficiente stock de este producto');
           return prev;
         }
         return prev.map(item => 
-          item.id === product.id ? { ...item, cantidad: item.cantidad + 1 } : item
+          item.id === product.id ? { ...item, cantidad: parseFloat(item.cantidad) + parseFloat(qtyToAdd) } : item
         );
       } else {
-        return [...prev, { ...product, cantidad: 1 }];
+        return [...prev, { ...product, cantidad: qtyToAdd }];
       }
     });
   };
@@ -74,7 +76,40 @@ const usePOS = () => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
   
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    setCotizacionId(null);
+  };
+
+  const loadCotizacion = (items, id) => {
+    let stockAlert = false;
+    const formattedItems = items.map(item => {
+      const realProduct = products.find(p => p.id === item.producto_id);
+      if (realProduct && realProduct.stock < item.cantidad) {
+        stockAlert = true;
+      }
+      return {
+        id: item.producto_id,
+        nombre: item.producto_nombre || `Producto ${item.producto_id}`,
+        precio_venta: item.precio_unitario,
+        aplica_iva: item.aplica_iva,
+        cantidad: parseFloat(item.cantidad),
+        stock: realProduct ? realProduct.stock : 9999
+      };
+    });
+    
+    if (stockAlert) {
+      alert('⚠️ Algunos productos de esta cotización tienen menos stock del requerido actualmente.');
+    }
+    
+    setCart(formattedItems);
+    setCotizacionId(id);
+  };
+
+  const discardCotizacion = () => {
+    setCotizacionId(null);
+    setCart([]);
+  };
 
   const getTotals = (metodoPago = 'efectivo') => {
     let subtotal = 0;
@@ -115,6 +150,7 @@ const usePOS = () => {
         cliente_id: clienteId,
         metodo_pago: metodoPago,
         descuento_global: 0,
+        cotizacion_id: cotizacionId,
         items: cart.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad,
@@ -144,6 +180,35 @@ const usePOS = () => {
     }
   };
 
+  const saveCotizacion = async (clienteId = null, validezDias = 7) => {
+    if (cart.length === 0) return { success: false, message: 'El carrito está vacío' };
+
+    try {
+      setLoading(true);
+
+      const payload = {
+        cliente_id: clienteId,
+        validez_dias: validezDias,
+        items: cart.map(item => ({
+          producto_id: item.id,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_venta,
+          aplica_iva: item.aplica_iva
+        }))
+      };
+
+      const res = await api.post('/cotizaciones', payload);
+      
+      clearCart();
+      return { success: true, data: res.data };
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Error al guardar la cotización';
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     products,
     settings,
@@ -156,7 +221,11 @@ const usePOS = () => {
     removeFromCart,
     clearCart,
     getTotals,
-    processSale
+    processSale,
+    saveCotizacion,
+    loadCotizacion,
+    discardCotizacion,
+    cotizacionId
   };
 };
 

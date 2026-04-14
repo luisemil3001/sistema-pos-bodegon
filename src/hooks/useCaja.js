@@ -22,9 +22,9 @@ const useCaja = () => {
         checkCajaEstado();
     }, [checkCajaEstado]);
 
-    const abrirCaja = async (monto, observaciones) => {
+    const abrirCaja = async (monto, observaciones, estacionId) => {
         try {
-            await api.post('/caja/abrir', { monto_apertura: monto, observaciones });
+            await api.post('/caja/abrir', { monto_apertura: monto, observaciones, estacion_id: estacionId });
             checkCajaEstado();
             return { success: true };
         } catch (err) {
@@ -42,7 +42,17 @@ const useCaja = () => {
         }
     };
 
-    return { cajaAbierta, loading, error, checkCajaEstado, abrirCaja, cerrarCaja };
+    const obtenerPreview = async (montoContado) => {
+        const res = await api.get('/caja/preview', { params: { monto_cierre: montoContado } });
+        return res.data;
+    };
+
+    const getEstaciones = async () => {
+        const res = await api.get('/caja/estaciones');
+        return res.data;
+    };
+
+    return { cajaAbierta, loading, error, checkCajaEstado, abrirCaja, cerrarCaja, getEstaciones, obtenerPreview };
 };
 
 export default useCaja;

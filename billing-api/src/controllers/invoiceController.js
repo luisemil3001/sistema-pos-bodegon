@@ -3,7 +3,7 @@ const { generarPayloadImpresion, enviarAImpresoraFiscal } = require('../services
 
 // Crear una nueva factura
 const createInvoice = async (req, res) => {
-  const { cliente_id, items, metodo_pago, descuento_global } = req.body;
+  const { cliente_id, items, metodo_pago, descuento_global, cotizacion_id } = req.body;
   const usuario_id = req.user.id;
 
   if (!items || items.length === 0) {
@@ -98,6 +98,10 @@ const createInvoice = async (req, res) => {
         VALUES (?, ?, ?, ?, ?)`,
         [nuevaFacturaId, pItem.producto_id, pItem.cantidad, pItem.precio_unitario, pItem.subtotal]
       );
+    }
+
+    if (cotizacion_id) {
+      await connection.query('UPDATE cotizaciones SET estado = "facturada" WHERE id = ?', [cotizacion_id]);
     }
 
     await connection.commit();

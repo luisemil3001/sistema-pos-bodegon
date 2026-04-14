@@ -1,0 +1,158 @@
+import React from 'react';
+import { X, Printer, Loader2, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle }) => {
+  const navigate = useNavigate();
+
+  if (!isOpen) return null;
+
+  const handlePrint = () => {
+    const printContent = document.getElementById('cotizacion-print-area');
+    const originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent.innerHTML;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload(); // Recargar para restaurar eventos de React
+  };
+
+  const handleFacturar = () => {
+    // Almacenar temporalmente los datos en localStorage para que el POS los absorba
+    localStorage.setItem('pos_cotizacion_import', JSON.stringify({
+      id: cotizacion.id,
+      cliente_id: cotizacion.cliente_id,
+      cliente_nombre: cotizacion.cliente_nombre,
+      items: cotizacion.items
+    }));
+    navigate('/pos');
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100,
+      padding: '1rem'
+    }}>
+      <div style={{
+        backgroundColor: 'var(--bg-main)',
+        borderRadius: 'var(--radius)',
+        width: '100%',
+        maxWidth: '500px',
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+      }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Detalle de Cotización</h2>
+          <button onClick={onClose} style={{ background: 'transparent', color: 'var(--text-muted)' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: '1.5rem', overflowY: 'auto' }} id="cotizacion-print-area">
+          {loadingDetalle || !cotizacion ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+              <Loader2 className="animate-spin" size={32} />
+            </div>
+          ) : (
+            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '0.9rem', color: '#000', backgroundColor: '#fff', padding: '2rem', border: '1px solid #eee', width: '100%', boxSizing: 'border-box' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                <div>
+                  <h1 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.5rem' }}>PRESUPUESTO</h1>
+                  <p style={{ margin: '0.25rem 0', color: '#666' }}># {cotizacion.numero_cotizacion}</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h3 style={{ margin: 0 }}>SISTEMA POS BODEGÓN</h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Documento no válido como factura fiscal</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', padding: '1rem', backgroundColor: '#f9fafb' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Cliente</div>
+                  <div style={{ fontWeight: 'bold' }}>{cotizacion.cliente_nombre || 'CONSUMIDOR FINAL'}</div>
+                  {cotizacion.rnc_cedula && <div style={{ fontSize: '0.85rem' }}>RNC/CI: {cotizacion.rnc_cedula}</div>}
+                  {cotizacion.direccion && <div style={{ fontSize: '0.85rem', color: '#666' }}>{cotizacion.direccion}</div>}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Detalles de Emisión</div>
+                  <div style={{ fontWeight: 'bold' }}>Fecha: {new Date(cotizacion.fecha).toLocaleDateString()}</div>
+                  <div style={{ fontSize: '0.85rem' }}>Validez: {cotizacion.validez_dias} días</div>
+                  <div style={{ fontSize: '0.85rem', color: '#666' }}>Atendido por: {cotizacion.cajero_nombre}</div>
+                </div>
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #000', backgroundColor: '#f3f4f6' }}>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Descripción del Producto</th>
+                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>Cant.</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Precio</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cotizacion.items?.map((it, idx) => (
+                    <tr key={it.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '0.75rem' }}>{it.producto_nombre}</td>
+                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>{it.cantidad}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem' }}>$ {parseFloat(it.precio_unitario).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: '500' }}>$ {parseFloat(it.subtotal).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ width: '250px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                    <span style={{ color: '#666' }}>Subtotal:</span>
+                    <span>$ {parseFloat(cotizacion.subtotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                    <span style={{ color: '#666' }}>Impuestos (IVA):</span>
+                    <span>$ {parseFloat(cotizacion.itbis || 0).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '2px solid var(--primary)', marginTop: '0.5rem', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--primary)' }}>
+                    <span>Total:</span>
+                    <span>$ {parseFloat(cotizacion.total || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '3rem', borderTop: '1px solid #eee', paddingTop: '1rem', fontSize: '0.75rem', color: '#999', textAlign: 'center' }}>
+                * Este documento es un presupuesto informativo y no representa un compromiso de reserva de inventario hasta que se procese el pago.<br/>
+                Válido por {cotizacion.validez_dias} días contados a partir de la fecha de emisión.
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          {cotizacion && cotizacion.estado === 'pendiente' && (
+            <button 
+              onClick={handleFacturar}
+              style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}
+            >
+              <Play size={18} /> Facturar
+            </button>
+          )}
+          <button 
+            onClick={handlePrint}
+            style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-main)' }}
+            disabled={!cotizacion || loadingDetalle}
+          >
+            <Printer size={18} /> Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CotizacionModal;
