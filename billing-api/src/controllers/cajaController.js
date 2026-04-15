@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const bcvService = require('../services/bcvService');
 
 // Obtener el estado de la caja para el usuario actual
 const getEstadoCaja = async (req, res) => {
@@ -30,18 +31,38 @@ const abrirCaja = async (req, res) => {
     }
 
     try {
+        // --- INICIO SINCRONIZACION BCV ---
+        let bcvObservacion = '';
+        try {
+            const bcvRate = await bcvService.getBcvRate();
+            if (bcvRate) {
+                await pool.query('UPDATE empresas SET tasa_dolar = ? WHERE id = 1', [bcvRate]);
+                bcvObservacion = ` [Sincronización BCV: ${bcvRate}]`;
+                console.log(`Tasa sincronizada en apertura: ${bcvRate}`);
+            }
+        } catch (bcvErr) {
+            console.error('Error al sincronizar con BCV en apertura:', bcvErr.message);
+        }
+        // --- FIN SINCRONIZACION BCV ---
+
         // Verificar si ya tiene una caja abierta
         const [open] = await pool.query('SELECT id FROM cajas WHERE usuario_id = ? AND estado = "abierta"', [usuarioId]);
         if (open.length > 0) {
             return res.status(400).json({ error: 'Ya tiene una caja abierta para este usuario' });
         }
 
+        const notaFinal = (observaciones || '') + bcvObservacion;
+
         const [result] = await pool.query(
             'INSERT INTO cajas (usuario_id, monto_apertura, observaciones, estado, estacion_id) VALUES (?, ?, ?, "abierta", ?)',
-            [usuarioId, monto_apertura, observaciones, estacion_id || null]
+            [usuarioId, monto_apertura, notaFinal, estacion_id || null]
         );
 
-        res.status(201).json({ id: result.insertId, message: 'Caja abierta exitosamente' });
+        res.status(201).json({ 
+            id: result.insertId, 
+            message: 'Caja abierta exitosamente' + (bcvObservacion ? ' y tasa sincronizada con BCV' : ''),
+            tasa_sincronizada: bcvObservacion ? true : false
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al abrir caja' });
