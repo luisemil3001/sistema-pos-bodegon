@@ -50,6 +50,29 @@ const POSPage = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ rnc_cedula: '', nombre: '', telefono: '', direccion: '' });
   const [savingCustomer, setSavingCustomer] = useState(false);
+  
+  const customerIdInputRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ALT + N para Nuevo Cliente
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setIsCustomerModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (isCustomerModalOpen) {
+      setTimeout(() => {
+        customerIdInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isCustomerModalOpen]);
 
   useEffect(() => {
     api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
@@ -149,15 +172,19 @@ const POSPage = () => {
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomer.nombre) {
-      alert("El nombre del cliente es obligatorio");
+    if (!newCustomer.nombre || newCustomer.nombre.trim().length < 3) {
+      alert("El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.");
       return;
     }
     setSavingCustomer(true);
     try {
-      const res = await api.post('/customers', newCustomer);
-      const createdCustomer = { id: res.data.id, ...newCustomer };
-      setCustomers([...customers, createdCustomer]);
+      const res = await api.post('/customers', {
+        ...newCustomer,
+        nombre: newCustomer.nombre.trim().toUpperCase(),
+        rnc_cedula: newCustomer.rnc_cedula ? newCustomer.rnc_cedula.trim().toUpperCase() : null
+      });
+      const createdCustomer = { id: res.data.id, ...newCustomer, nombre: newCustomer.nombre.trim().toUpperCase() };
+      setCustomers(prev => [...prev, createdCustomer]);
       setSelectedCustomer(createdCustomer);
       setCustomerSearch('');
       setIsCustomerModalOpen(false);
@@ -166,7 +193,7 @@ const POSPage = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.error || 'Error al guardar el cliente');
+      alert(error.response?.data?.error || 'Error al guardar el cliente (Es posible que la cédula ya exista)');
     } finally {
       setSavingCustomer(false);
     }
@@ -389,8 +416,8 @@ const POSPage = () => {
                     </div>
                   )}
 
-                  {/* Siempre mostrar opción de crear si hay algo escrito */}
-                  {customerSearch.length > 2 && (
+                   {/* Siempre mostrar opción de crear si hay algo escrito o no hay resultados */}
+                  {(customerSearch.length > 2 || filteredCustomers.length === 0) && (
                     <div 
                       onMouseDown={(e) => { 
                         e.preventDefault(); 
@@ -398,9 +425,26 @@ const POSPage = () => {
                         setIsCustomerModalOpen(true); 
                         setShowCustomerDropdown(false);
                       }}
-                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--border)' }}
+                      style={{ 
+                        padding: '1rem', 
+                        cursor: 'pointer', 
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)', 
+                        color: 'var(--primary)', 
+                        fontWeight: 'bold', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        alignItems: 'center', 
+                        gap: '0.5rem', 
+                        borderTop: '2px dashed var(--border)',
+                        textAlign: 'center'
+                      }}
                     >
-                      <Plus size={16} /> Registrar nuevo cliente: "{customerSearch}"
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Plus size={20} /> Registrar como nuevo cliente
+                      </div>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.8, fontWeight: 'normal' }}>
+                        Atajo: ALT + N
+                      </div>
                     </div>
                   )}
                 </div>
@@ -561,19 +605,21 @@ const POSPage = () => {
                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Cédula / RIF</label>
                 <input 
                   type="text" 
+                  ref={customerIdInputRef}
                   value={newCustomer.rnc_cedula} 
-                  autoFocus
+                  placeholder="V-00000000"
                   onChange={e => setNewCustomer({...newCustomer, rnc_cedula: e.target.value})}
-                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                  style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', fontSize: '1.1rem', color: 'var(--primary)', fontWeight: 'bold' }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Nombre / Razón Social <span style={{color: 'red'}}>*</span></label>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Nombre / Razón Social <span style={{color: 'var(--danger)'}}>*</span></label>
                 <input 
                   type="text" 
                   value={newCustomer.nombre} 
+                  placeholder="Nombre Completo"
                   onChange={e => setNewCustomer({...newCustomer, nombre: e.target.value})}
-                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                  style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)' }}
                 />
               </div>
               <div>
