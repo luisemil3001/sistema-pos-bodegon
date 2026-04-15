@@ -117,9 +117,25 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
                   <span>IGTF ({settings?.igtf_tasa || 3}%):</span> <span>${formatNum(invoice.igtf_monto)}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem' }}>
-                <span>TOTAL:</span> <span>${formatNum(invoice.total)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '1px' }}>
+                <span>TOTAL $:</span> <span>${formatNum(invoice.total)}</span>
               </div>
+
+              {/* SECCIÓN DE CONVERSIÓN A BOLÍVARES (SENIAT REQUIREMENT) */}
+              {(invoice.tasa_cambio_usada || settings?.tasa_dolar) && (
+                <div style={{ borderTop: '1px solid #000', marginTop: '8px', paddingTop: '5px' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#666', textAlign: 'center', marginBottom: '3px' }}>
+                    TASA DE CAMBIO: Bs. {formatNum(invoice.tasa_cambio_usada || settings.tasa_dolar)}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem' }}>
+                    <span>TOTAL Bs:</span> 
+                    <span>Bs. {((parseFloat(invoice.total) || 0) * (parseFloat(invoice.tasa_cambio_usada || settings.tasa_dolar || 1))).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ fontSize: '0.65rem', textAlign: 'center', marginTop: '4px', fontStyle: 'italic' }}>
+                    Monto expresado en moneda nacional para fines legales.
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '0.7rem' }}>
