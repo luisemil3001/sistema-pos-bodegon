@@ -16,23 +16,32 @@ const getSettings = async (req, res) => {
 
 // Actualizar configuración del negocio
 const updateSettings = async (req, res) => {
-  const { nombre_empresa, rnc, direccion, telefono, email, itbis_tasa, tipo_impresora, margen_vencimiento } = req.body;
+  const { 
+    nombre_empresa, rnc, direccion, telefono, email, 
+    itbis_tasa, tipo_impresora, margen_vencimiento,
+    tasa_dolar 
+  } = req.body;
   
   try {
     const [result] = await pool.query(
       `UPDATE empresas SET 
       nombre = ?, rnc = ?, direccion = ?, telefono = ?, email = ?, 
-      itbis_tasa = ?, tipo_impresora = ?, margen_vencimiento = ? 
+      itbis_tasa = ?, tipo_impresora = ?, margen_vencimiento = ?,
+      tasa_dolar = ?
       WHERE id = 1`,
-      [nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, itbis_tasa || 16, tipo_impresora || 'pos', margen_vencimiento || 30]
+      [
+        nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, 
+        itbis_tasa || 16, tipo_impresora || 'pos', margen_vencimiento || 30,
+        tasa_dolar || 36.45
+      ]
     );
 
     if (result.affectedRows === 0) {
       // Si por alguna razón no existe el registro de la empresa 1, lo creamos
       await pool.query(
-        `INSERT INTO empresas (id, nombre, rnc, direccion, telefono, email, itbis_tasa, tipo_impresora, moneda) 
-        VALUES (1, ?, ?, ?, ?, ?, ?, ?, 'USD')`,
-        [nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, itbis_tasa || 16, tipo_impresora || 'pos']
+        `INSERT INTO empresas (id, nombre, rnc, direccion, telefono, email, itbis_tasa, tipo_impresora, moneda, tasa_dolar) 
+        VALUES (1, ?, ?, ?, ?, ?, ?, ?, 'USD', ?)`,
+        [nombre_empresa, rnc || null, direccion || null, telefono || null, email || null, itbis_tasa || 16, tipo_impresora || 'pos', tasa_dolar || 36.45]
       );
     }
     

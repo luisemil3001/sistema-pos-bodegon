@@ -93,12 +93,14 @@ const createInvoice = async (req, res) => {
     const nextId = lastFactura.length > 0 ? lastFactura[0].id + 1 : 1;
     const numero_factura = `FAC-${fecha.getFullYear().toString().slice(-2)}${String(fecha.getMonth()+1).padStart(2,'0')}${String(fecha.getDate()).padStart(2,'0')}-${String(nextId).padStart(4,'0')}`;
 
+    const tasa_cambio_usada = parseFloat(empresa.tasa_dolar || 1);
+
     // 6. Insertar encabezado de factura
     const [facturaResult] = await connection.query(
       `INSERT INTO facturas 
-      (numero_factura, cliente_id, usuario_id, caja_id, subtotal, itbis, descuento, igtf_monto, total, metodo_pago) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [numero_factura, cliente_id || null, usuario_id, caja_id, totalSubtotal, totalIva, descuentoFinal, igtf_monto, granTotal, metodo_pago || 'efectivo']
+      (numero_factura, cliente_id, usuario_id, caja_id, subtotal, itbis, descuento, igtf_monto, total, metodo_pago, tasa_cambio_usada) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [numero_factura, cliente_id || null, usuario_id, caja_id, totalSubtotal, totalIva, descuentoFinal, igtf_monto, granTotal, metodo_pago || 'efectivo', tasa_cambio_usada]
     );
 
     const nuevaFacturaId = facturaResult.insertId;
@@ -118,23 +120,28 @@ const createInvoice = async (req, res) => {
 
     await connection.commit();
 
-    // 8. Generar payload de impresión (sin bloquear la respuesta)
-    const facturaParaImprimir = {
+    const tasa_cambio = parseFloat(empresa.tasa_dolar || 1);
+
+    // 8. Generar payload de impresión (CONVERSIÓN A BOLÍVARES PARA EL SENIAT)
+    const facturaEnBolivares = {
       numero_factura,
       fecha: new Date().toISOString(),
       metodo_pago,
-      subtotal: totalSubtotal,
-      itbis: totalIva,
-      iva: totalIva,
-      igtf_monto,
-      total: granTotal,
+      subtotal: totalSubtotal * tasa_cambio,
+      itbis: totalIva * tasa_cambio,
+      iva: totalIva * tasa_cambio,
+      igtf_monto: igtf_monto * tasa_cambio,
+      total: granTotal * tasa_cambio,
       items: processedItems.map(pi => ({
         ...pi,
-        producto_nombre: (items.find(i => i.producto_id === pi.producto_id) || {}).nombre || `Producto #${pi.producto_id}`
+        producto_nombre: (items.find(i => i.producto_id === pi.producto_id) || {}).nombre || `Producto #${pi.producto_id}`,
+        precio_unitario: pi.precio_unitario * tasa_cambio,
+        subtotal: pi.subtotal * tasa_cambio,
+        iva: pi.iva * tasa_cambio
       }))
     };
 
-    const payloadImpresion = generarPayloadImpresion(facturaParaImprimir, {
+    const payloadImpresion = generarPayloadImpresion(facturaEnBolivares, {
       ...empresa,
       nombre: empresa.nombre,
       rnc: empresa.rnc,
@@ -274,8 +281,23 @@ const reprintInvoice = async (req, res) => {
 
     const [empresaRows] = await pool.query('SELECT * FROM empresas LIMIT 1');
     const empresa = empresaRows[0] || {};
+    const tasa_cambio = parseFloat(facturaCompleta.tasa_cambio_usada || 1);
 
-    const payloadImpresion = generarPayloadImpresion(facturaCompleta, empresa, { esCopia: true });
+    // CONVERSIÓN A BOLÍVARES PARA REIMPRESIÓN FISCAL
+    const facturaEnBolivares = {
+      ...facturaCompleta,
+      subtotal: facturaCompleta.subtotal * tasa_cambio,
+      itbis: facturaCompleta.itbis * tasa_cambio,
+      total: facturaCompleta.total * tasa_cambio,
+      igtf_monto: (facturaCompleta.igtf_monto || 0) * tasa_cambio,
+      items: facturaCompleta.items.map(it => ({
+        ...it,
+        precio_unitario: it.precio_unitario * tasa_cambio,
+        subtotal: it.subtotal * tasa_cambio
+      }))
+    };
+
+    const payloadImpresion = generarPayloadImpresion(facturaEnBolivares, empresa, { esCopia: true });
 
     // Enviar a la impresora y ESPERAR resultado (Modo Síncrono)
     const printerResult = await enviarAImpresoraFiscal(payloadImpresion);
@@ -344,17 +366,33 @@ const handleOfflineInvoice = async (req, res) => {
       igtf_monto,
       total: granTotal,
       items: processedItems,
-      offline: true
+      offline: true,
+      tasa_cambio_usada: 36.45 // TODO: Obtener del cache de settings si existe
     };
 
     // 1. Guardar en contingencia local
     contingenciaService.guardarVentaOffline(facturaParaImprimir);
 
+    const tasa_cambio = 36.45; // TODO: Usar tasa del cache
+    const facturaEnBolivares = {
+      ...facturaParaImprimir,
+      subtotal: totalSubtotal * tasa_cambio,
+      itbis: totalIva * tasa_cambio,
+      iva: totalIva * tasa_cambio,
+      igtf_monto: igtf_monto * tasa_cambio,
+      total: granTotal * tasa_cambio,
+      items: processedItems.map(pi => ({
+        ...pi,
+        precio_unitario: pi.precio_unitario * tasa_cambio,
+        subtotal: pi.subtotal * tasa_cambio
+      }))
+    };
+
     // 2. Intentar imprimir (esto funciona porque printerService es local)
-    const payloadImpresion = generarPayloadImpresion(facturaParaImprimir, {
+    const payloadImpresion = generarPayloadImpresion(facturaEnBolivares, {
       nombre: "BODEGON (OFFLINE)",
       rnc: "PENDIENTE",
-      tipo_impresora: 'pos' // Forzamos POS o buscamos en settings locales si existen
+      tipo_impresora: 'pos' 
     });
 
     const printerResult = await enviarAImpresoraFiscal(payloadImpresion);

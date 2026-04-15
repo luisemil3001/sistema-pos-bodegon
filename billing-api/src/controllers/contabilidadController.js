@@ -16,6 +16,10 @@ const getLibroVentas = async (req, res) => {
         f.subtotal as base_imponible, 
         f.itbis as iva_retenido, 
         f.total,
+        f.tasa_cambio_usada,
+        (f.subtotal * f.tasa_cambio_usada) as base_imponible_bs,
+        (f.itbis * f.tasa_cambio_usada) as iva_retenido_bs,
+        (f.total * f.tasa_cambio_usada) as total_bs,
         f.estado
       FROM facturas f
       LEFT JOIN clientes c ON f.cliente_id = c.id
@@ -45,7 +49,11 @@ const getLibroCompras = async (req, res) => {
         p.rnc_cedula, 
         c.subtotal as base_imponible, 
         c.itbis as iva_soportado, 
-        c.total
+        c.total,
+        c.tasa_cambio,
+        (c.subtotal * c.tasa_cambio) as base_imponible_bs,
+        (c.itbis * c.tasa_cambio) as iva_soportado_bs,
+        (c.total * c.tasa_cambio) as total_bs
       FROM compras c
       LEFT JOIN proveedores p ON c.proveedor_id = p.id
       WHERE DATE(c.fecha) >= ? AND DATE(c.fecha) <= ?
@@ -68,29 +76,44 @@ const getResumenIva = async (req, res) => {
   try {
     // Total IVA de Ventas (Débito Fiscal)
     const [ventas] = await pool.query(`
-      SELECT SUM(itbis) as debito_fiscal, SUM(subtotal) as total_ventas 
+      SELECT 
+        SUM(itbis) as debito_fiscal, 
+        SUM(subtotal) as total_ventas,
+        SUM(itbis * tasa_cambio_usada) as debito_fiscal_bs,
+        SUM(subtotal * tasa_cambio_usada) as total_ventas_bs
       FROM facturas 
       WHERE DATE(fecha) >= ? AND DATE(fecha) <= ? AND estado = 'pagada'
     `, [fechaInicio, fechaFin]);
 
     // Total IVA de Compras (Crédito Fiscal)
     const [compras] = await pool.query(`
-      SELECT SUM(itbis) as credito_fiscal, SUM(subtotal) as total_compras 
+      SELECT 
+        SUM(itbis) as credito_fiscal, 
+        SUM(subtotal) as total_compras,
+        SUM(itbis * tasa_cambio) as credito_fiscal_bs,
+        SUM(subtotal * tasa_cambio) as total_compras_bs
       FROM compras 
       WHERE DATE(fecha) >= ? AND DATE(fecha) <= ?
     `, [fechaInicio, fechaFin]);
 
     const debito = ventas[0].debito_fiscal || 0;
     const credito = compras[0].credito_fiscal || 0;
+    const debito_bs = ventas[0].debito_fiscal_bs || 0;
+    const credito_bs = compras[0].credito_fiscal_bs || 0;
 
     res.json({
       fechaInicio,
       fechaFin,
       total_ventas_base: ventas[0].total_ventas || 0,
       total_compras_base: compras[0].total_compras || 0,
+      total_ventas_base_bs: ventas[0].total_ventas_bs || 0,
+      total_compras_base_bs: ventas[0].total_compras_bs || 0,
       debito_fiscal: debito,
       credito_fiscal: credito,
-      cuota_tributaria: debito - credito // Si es positivo, pagar a hacienda. Si es negativo, a favor.
+      debito_fiscal_bs: debito_bs,
+      credito_fiscal_bs: credito_bs,
+      cuota_tributaria: debito - credito,
+      cuota_tributaria_bs: debito_bs - credito_bs
     });
 
   } catch (err) {

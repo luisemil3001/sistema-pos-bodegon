@@ -508,9 +508,17 @@ const POSPage = () => {
             <span>IVA ({(settings ? parseFloat(settings.itbis_tasa) : 16)}%)</span>
             <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>${totals.iva.toFixed(2)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--border)', paddingTop: '0.75rem', marginTop: '0.25rem', fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-            <span>Total</span>
-            <span>${totals.total.toFixed(2)}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderTop: '1px dashed var(--border)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+              <span>Total USD</span>
+              <span>${totals.total.toFixed(2)}</span>
+            </div>
+            {settings && settings.tasa_dolar && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: '600', color: 'var(--success)', backgroundColor: 'rgba(34, 197, 94, 0.05)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                <span style={{ fontSize: '0.8rem', alignSelf: 'center', opacity: 0.8 }}>Equivalente Bs.</span>
+                <span>Bs. {(totals.total * parseFloat(settings.tasa_dolar)).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            )}
           </div>
 
           {!cajaAbierta && (

@@ -6,13 +6,13 @@ const getStats = async (req, res) => {
         const hoy = new Date().toISOString().slice(0, 10);
         
         // Ventas de hoy
-        const [hoyRows] = await pool.query('SELECT SUM(total) as total, COUNT(*) as count FROM facturas WHERE DATE(fecha) = ? AND estado != "anulada"', [hoy]);
+        const [hoyRows] = await pool.query('SELECT SUM(total) as total, SUM(total * tasa_cambio_usada) as total_bs, COUNT(*) as count FROM facturas WHERE DATE(fecha) = ? AND estado != "anulada"', [hoy]);
         
         // Ventas del mes
         const inicioMes = new Date();
         inicioMes.setDate(1);
         const inicioMesStr = inicioMes.toISOString().slice(0, 10);
-        const [mesRows] = await pool.query('SELECT SUM(total) as total FROM facturas WHERE DATE(fecha) >= ? AND estado != "anulada"', [inicioMesStr]);
+        const [mesRows] = await pool.query('SELECT SUM(total) as total, SUM(total * tasa_cambio_usada) as total_bs FROM facturas WHERE DATE(fecha) >= ? AND estado != "anulada"', [inicioMesStr]);
         
         // Clientes totales
         const [clienteRows] = await pool.query('SELECT COUNT(*) as count FROM clientes');
@@ -33,11 +33,13 @@ const getStats = async (req, res) => {
         res.json({
             hoy: {
                 total: parseFloat(hoyRows[0].total || 0),
+                total_bs: parseFloat(hoyRows[0].total_bs || 0),
                 cantidad: hoyRows[0].count,
                 promedio: hoyRows[0].count > 0 ? (parseFloat(hoyRows[0].total) / hoyRows[0].count) : 0
             },
             mes: {
-                total: parseFloat(mesRows[0].total || 0)
+                total: parseFloat(mesRows[0].total || 0),
+                total_bs: parseFloat(mesRows[0].total_bs || 0)
             },
             clientes: clienteRows[0].count,
             alerta_stock: stockRows[0].count,
@@ -55,7 +57,7 @@ const getCharts = async (req, res) => {
     try {
         // Ventas últimos 7 días
         const [ventasSemanales] = await pool.query(`
-            SELECT DATE(fecha) as fecha, SUM(total) as total 
+            SELECT DATE(fecha) as fecha, SUM(total) as total, SUM(total * tasa_cambio_usada) as total_bs
             FROM facturas 
             WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND estado != "anulada"
             GROUP BY DATE(fecha)

@@ -77,6 +77,7 @@ const DashboardPage = () => {
                 <StatCard 
                     title="Ventas de Hoy" 
                     value={`$${(stats?.hoy?.total || 0).toFixed(2)}`} 
+                    extraValue={`Bs. ${(stats?.hoy?.total_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}
                     icon={<DollarSign size={24} />} 
                     color="#38bdf8" 
                     subtitle={`${stats?.hoy?.cantidad || 0} facturas emitidas`}
@@ -91,6 +92,7 @@ const DashboardPage = () => {
                 <StatCard 
                     title="Ventas del Mes" 
                     value={`$${(stats?.mes?.total || 0).toFixed(2)}`} 
+                    extraValue={`Bs. ${(stats?.mes?.total_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}
                     icon={<ShoppingBag size={24} />} 
                     color="#a855f7" 
                     subtitle="Acumulado periodo actual"
@@ -172,7 +174,7 @@ const DashboardPage = () => {
     );
 };
 
-const StatCard = ({ title, value, icon, color, subtitle, warning, onClick }) => (
+const StatCard = ({ title, value, extraValue, icon, color, subtitle, warning, onClick }) => (
     <div 
         onClick={onClick}
         style={{ 
@@ -182,7 +184,7 @@ const StatCard = ({ title, value, icon, color, subtitle, warning, onClick }) => 
             border: `1px solid ${warning ? '#ef4444' : 'var(--border)'}`,
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.5rem',
+            gap: '0.25rem',
             position: 'relative',
             overflow: 'hidden',
             cursor: onClick ? 'pointer' : 'default',
@@ -196,8 +198,11 @@ const StatCard = ({ title, value, icon, color, subtitle, warning, onClick }) => 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             {React.cloneElement(icon, { size: 16, color })} {title}
         </div>
-        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{value}</div>
-        <div style={{ fontSize: '0.8rem', color: warning ? '#ef4444' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)', lineHeight: 1 }}>{value}</div>
+        {extraValue && (
+            <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--success)' }}>{extraValue}</div>
+        )}
+        <div style={{ fontSize: '0.8rem', color: warning ? '#ef4444' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.25rem' }}>
             {subtitle}
         </div>
     </div>

@@ -62,26 +62,30 @@ const AccountingPage = () => {
     // Configurar Encabezados
     let headers = [];
     if (activeTab === 'ventas') {
-      headers = ['Fecha', 'Nro Factura', 'Razón Social / Cliente', 'RNC / Cédula', 'Base Imponible', 'IVA Repercutido', 'Total Operación'];
+      headers = ['Fecha', 'Nro Factura', 'Razón Social / Cliente', 'RNC / Cédula', 'Tasa', 'Base (Bs.)', 'IVA (Bs.)', 'Total (Bs.)', 'Total ($)'];
       worksheet.columns = [
-        { key: 'fecha', width: 15 },
-        { key: 'nro_factura', width: 20 },
-        { key: 'cliente', width: 40 },
-        { key: 'rnc', width: 20 },
-        { key: 'base', width: 20 },
-        { key: 'iva', width: 20 },
-        { key: 'total', width: 20 }
+        { key: 'fecha', width: 12 },
+        { key: 'nro_factura', width: 18 },
+        { key: 'cliente', width: 35 },
+        { key: 'rnc', width: 15 },
+        { key: 'tasa', width: 10 },
+        { key: 'base_bs', width: 18 },
+        { key: 'iva_bs', width: 18 },
+        { key: 'total_bs', width: 18 },
+        { key: 'total_usd', width: 15 }
       ];
     } else {
-      headers = ['Fecha', 'Nro Factura', 'Proveedor', 'RNC / Cédula', 'Base Imponible', 'IVA Soportado', 'Total Operación'];
+      headers = ['Fecha', 'Nro Factura', 'Proveedor', 'RNC / Cédula', 'Tasa', 'Base (Bs.)', 'IVA (Bs.)', 'Total (Bs.)', 'Total ($)'];
       worksheet.columns = [
-        { key: 'fecha', width: 15 },
-        { key: 'nro_factura', width: 20 },
-        { key: 'cliente', width: 40 },
-        { key: 'rnc', width: 20 },
-        { key: 'base', width: 20 },
-        { key: 'iva', width: 20 },
-        { key: 'total', width: 20 }
+        { key: 'fecha', width: 12 },
+        { key: 'nro_factura', width: 18 },
+        { key: 'cliente', width: 35 },
+        { key: 'rnc', width: 15 },
+        { key: 'tasa', width: 10 },
+        { key: 'base_bs', width: 18 },
+        { key: 'iva_bs', width: 18 },
+        { key: 'total_bs', width: 18 },
+        { key: 'total_usd', width: 15 }
       ];
     }
 
@@ -101,53 +105,36 @@ const AccountingPage = () => {
 
     data.forEach((item, index) => {
       let rowData = [];
-      const base = parseFloat(item.base_imponible || 0);
-      const total = parseFloat(item.total || 0);
-      let iva = 0;
+      const base_bs = parseFloat(item.base_imponible_bs || 0);
+      const iva_bs = activeTab === 'ventas' ? parseFloat(item.iva_retenido_bs || 0) : parseFloat(item.iva_soportado_bs || 0);
+      const total_bs = parseFloat(item.total_bs || 0);
+      const total_usd = parseFloat(item.total || 0);
+      const tasa = parseFloat(item.tasa_cambio_usada || item.tasa_cambio || 1);
 
-      if (activeTab === 'ventas') {
-        iva = parseFloat(item.iva_retenido || 0);
-        rowData = [
-          new Date(item.fecha).toLocaleDateString(),
-          item.numero_factura,
-          item.cliente_nombre || 'Consumidor Final',
-          item.rnc_cedula || 'N/A',
-          base,
-          iva,
-          total
-        ];
-      } else {
-        iva = parseFloat(item.iva_soportado || 0);
-        rowData = [
-          new Date(item.fecha).toLocaleDateString(),
-          item.numero_factura_proveedor,
-          item.proveedor_nombre || 'Desconocido',
-          item.rnc_cedula || 'N/A',
-          base,
-          iva,
-          total
-        ];
-      }
+      rowData = [
+        new Date(item.fecha).toLocaleDateString(),
+        activeTab === 'ventas' ? item.numero_factura : item.numero_factura_proveedor,
+        activeTab === 'ventas' ? (item.cliente_nombre || 'Consumidor Final') : (item.proveedor_nombre || 'Desconocido'),
+        item.rnc_cedula || 'N/A',
+        tasa,
+        base_bs,
+        iva_bs,
+        total_bs,
+        total_usd
+      ];
 
-      totalBase += base;
-      totalIva += iva;
-      totalMonto += total;
+      totalMonto += total_bs; // El total del reporte legal es en Bs.
 
       const valRow = worksheet.addRow(rowData);
-      
-      // Estilos para la fila de datos
-      const alternateColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF9FAFB'; // Gris muy claro intercalado
       valRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alternateColor } };
-        cell.border = { top: {style:'thin', color:{argb:'FFEEEEEE'}}, bottom: {style:'thin', color:{argb:'FFEEEEEE'}}, left: {style:'thin', color:{argb:'FFEEEEEE'}}, right: {style:'thin', color:{argb:'FFEEEEEE'}} };
-        
-        // Centrar las primeras 4 columnas
         if (colNumber <= 4) {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.alignment = { horizontal: 'center' };
+        } else if (colNumber === 5) {
+           cell.numFmt = '#,##0.00';
+        } else if (colNumber === 9) {
+           cell.numFmt = '"$"#,##0.00';
         } else {
-          // Moneda y alinear a la derecha para montos
-          cell.alignment = { vertical: 'middle', horizontal: 'right' };
-          cell.numFmt = '"$"#,##0.00';
+           cell.numFmt = '"Bs."#,##0.00';
         }
       });
     });
@@ -271,25 +258,23 @@ const AccountingPage = () => {
                     <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Fecha</th>
                     <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Factura Nº</th>
                     <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Cliente</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>RNC / Cédula</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'right' }}>Base Imp.</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'right' }}>IVA</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'right' }}>Total</th>
+                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tasa</th>
+                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'right' }}>Total ($)</th>
+                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'right' }}>Total (Bs.)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.length === 0 ? (
-                    <tr><td colSpan="7" style={{ padding: '2rem', textAlign: 'center' }}>No hay ventas registradas en este período</td></tr>
+                    <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center' }}>No hay ventas registradas en este período</td></tr>
                   ) : (
                     data.map((v, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '1rem' }}>{new Date(v.fecha).toLocaleDateString()}</td>
                         <td style={{ padding: '1rem' }}>{v.numero_factura}</td>
                         <td style={{ padding: '1rem' }}>{v.cliente_nombre || 'Consumidor Final'}</td>
-                        <td style={{ padding: '1rem' }}>{v.rnc_cedula || '-'}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>${parseFloat(v.base_imponible).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)' }}>${parseFloat(v.iva_retenido).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>${parseFloat(v.total).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{parseFloat(v.tasa_cambio_usada).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>${parseFloat(v.total).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--success)' }}>Bs. {parseFloat(v.total_bs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     ))
                   )}
@@ -338,14 +323,14 @@ const AccountingPage = () => {
                   
                   <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '600' }}>IVA Retenido (Ventas)</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${parseFloat(resumen.debito_fiscal).toFixed(2)}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Base Ventas: ${parseFloat(resumen.total_ventas_base).toFixed(2)}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${parseFloat(resumen.debito_fiscal).toFixed(2)}</div>
+                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {parseFloat(resumen.debito_fiscal_bs).toLocaleString('es-VE')}</div>
                   </div>
 
                   <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '600' }}>IVA Soportado (Compras)</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--info)' }}>${parseFloat(resumen.credito_fiscal).toFixed(2)}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Base Compras: ${parseFloat(resumen.total_compras_base).toFixed(2)}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--info)' }}>${parseFloat(resumen.credito_fiscal).toFixed(2)}</div>
+                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {parseFloat(resumen.credito_fiscal_bs).toLocaleString('es-VE')}</div>
                   </div>
 
                   <div style={{ gridColumn: '1 / -1', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

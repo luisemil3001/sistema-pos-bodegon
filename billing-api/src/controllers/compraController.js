@@ -73,11 +73,14 @@ const createCompra = async (req, res) => {
     const granTotal = totalSubtotal + totalIva;
 
     // Insertar encabezado de compra
+    const [empSettings] = await connection.query('SELECT tasa_dolar FROM empresas LIMIT 1');
+    const tasa_compra = empSettings.length > 0 ? parseFloat(empSettings[0].tasa_dolar) : 36.45;
+
     const [compraResult] = await connection.query(
       `INSERT INTO compras 
-      (numero_factura_proveedor, proveedor_id, usuario_id, subtotal, itbis, total, metodo_pago) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [numero_factura_proveedor, proveedor_id || null, usuario_id, totalSubtotal, totalIva, granTotal, metodo_pago || 'efectivo']
+      (numero_factura_proveedor, proveedor_id, usuario_id, subtotal, itbis, total, metodo_pago, tasa_cambio) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [numero_factura_proveedor, proveedor_id || null, usuario_id, totalSubtotal, totalIva, granTotal, metodo_pago || 'efectivo', tasa_compra]
     );
 
     const nuevaCompraId = compraResult.insertId;
