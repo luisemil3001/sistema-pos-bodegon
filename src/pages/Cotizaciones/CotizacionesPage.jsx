@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
 import { Search, Loader2, Eye, Printer, FileDigit } from 'lucide-react';
 import CotizacionModal from './CotizacionModal';
+import useSettings from '../../hooks/useSettings';
+
 
 const CotizacionesPage = () => {
   const [cotizaciones, setCotizaciones] = useState([]);
@@ -11,10 +13,13 @@ const CotizacionesPage = () => {
   const [selectedCotizacion, setSelectedCotizacion] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const { settings, fetchSettings } = useSettings();
 
   useEffect(() => {
     fetchCotizaciones();
-  }, []);
+    fetchSettings();
+  }, [fetchSettings]);
+
 
   const fetchCotizaciones = async () => {
     try {
@@ -133,10 +138,12 @@ const CotizacionesPage = () => {
         onClose={() => setIsModalOpen(false)}
         cotizacion={selectedCotizacion}
         loadingDetalle={loadingDetalle}
+        settings={settings}
         onFacturar={() => {
             // Logica futura para facturar: cargar en POS
         }}
       />
+
     </div>
   );
 };

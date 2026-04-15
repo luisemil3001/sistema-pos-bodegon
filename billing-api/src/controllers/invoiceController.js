@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const { generarPayloadImpresion, enviarAImpresoraFiscal } = require('../services/printerService');
+const contingenciaService = require('../services/contingenciaService');
+
 
 // Crear una nueva factura
 const createInvoice = async (req, res) => {
@@ -10,9 +12,19 @@ const createInvoice = async (req, res) => {
     return res.status(400).json({ error: 'La factura debe tener al menos un producto' });
   }
 
-  const connection = await pool.getConnection();
+  let connection;
+  try {
+    connection = await pool.getConnection();
+  } catch (dbError) {
+    if (contingenciaService.esErrorDeConexion(dbError)) {
+      console.warn('[CONTINGENCIA] Fallo conexión a DB. Iniciando flujo offline...');
+      return handleOfflineInvoice(req, res);
+    }
+    return res.status(500).json({ error: 'Error de conexión a la base de datos' });
+  }
 
   try {
+
     await connection.beginTransaction();
 
     // 1. Verificar si el usuario tiene una caja abierta
@@ -158,7 +170,7 @@ const createInvoice = async (req, res) => {
 const getInvoices = async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, u.nombre as cajero_nombre
+      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.telefono as cliente_telefono, u.nombre as cajero_nombre
       FROM facturas f
       LEFT JOIN clientes c ON f.cliente_id = c.id
       LEFT JOIN usuarios u ON f.usuario_id = u.id
@@ -176,7 +188,7 @@ const getInvoiceById = async (req, res) => {
   const { id } = req.params;
   try {
     const [facturas] = await pool.query(`
-      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.direccion, u.nombre as cajero_nombre
+      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.direccion, c.telefono as cliente_telefono, u.nombre as cajero_nombre
       FROM facturas f
       LEFT JOIN clientes c ON f.cliente_id = c.id
       LEFT JOIN usuarios u ON f.usuario_id = u.id
@@ -242,7 +254,7 @@ const reprintInvoice = async (req, res) => {
   
   try {
     const [facturas] = await pool.query(`
-      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.direccion, u.nombre as cajero_nombre
+      SELECT f.*, c.nombre as cliente_nombre, c.rnc_cedula, c.direccion, c.telefono as cliente_telefono, u.nombre as cajero_nombre
       FROM facturas f
       LEFT JOIN clientes c ON f.cliente_id = c.id
       LEFT JOIN usuarios u ON f.usuario_id = u.id
@@ -279,5 +291,89 @@ const reprintInvoice = async (req, res) => {
   }
 };
 
+// Manejar la creación de factura cuando no hay conexión a la base de datos
+const handleOfflineInvoice = async (req, res) => {
+  const { cliente_id, items, metodo_pago, descuento_global } = req.body;
+  
+  try {
+    // Intentar obtener configuración de cache local
+    const cacheProductos = contingenciaService.obtenerProductosCache();
+    
+    let totalSubtotal = 0;
+    let totalIva = 0;
+    const processedItems = [];
+
+    const tasa_iva = 0.16; // Valores por defecto si no hay cache
+    const tasa_igtf = 0.03;
+
+    for (const item of items) {
+      const producto = cacheProductos.find(p => p.id === item.producto_id) || item;
+      const itemSubtotal = (producto.precio_venta || item.precio_unitario) * item.cantidad;
+      const itemIva = producto.aplica_iva ? (itemSubtotal * tasa_iva) : 0;
+      
+      totalSubtotal += itemSubtotal;
+      totalIva += itemIva;
+
+      processedItems.push({
+        producto_id: item.producto_id,
+        producto_nombre: producto.nombre || item.nombre || `Producto ${item.producto_id}`,
+        cantidad: item.cantidad,
+        precio_unitario: producto.precio_venta || item.precio_unitario,
+        aplica_iva: producto.aplica_iva,
+        subtotal: itemSubtotal,
+        iva: itemIva
+      });
+    }
+
+    const descuentoFinal = descuento_global || 0;
+    const metodos_divisas = ['divisas', 'dolares', 'dólares', 'usd', 'eur'];
+    const aplicaIGTF = metodos_divisas.includes((metodo_pago || '').toLowerCase());
+    const baseIGTF = totalSubtotal + totalIva - descuentoFinal;
+    const igtf_monto = aplicaIGTF ? parseFloat((baseIGTF * tasa_igtf).toFixed(2)) : 0;
+    const granTotal = parseFloat((baseIGTF + igtf_monto).toFixed(2));
+
+    const numero_factura = `OFF-${Date.now().toString().slice(-6)}`;
+
+    const facturaParaImprimir = {
+      numero_factura,
+      fecha: new Date().toISOString(),
+      metodo_pago,
+      subtotal: totalSubtotal,
+      itbis: totalIva,
+      iva: totalIva,
+      igtf_monto,
+      total: granTotal,
+      items: processedItems,
+      offline: true
+    };
+
+    // 1. Guardar en contingencia local
+    contingenciaService.guardarVentaOffline(facturaParaImprimir);
+
+    // 2. Intentar imprimir (esto funciona porque printerService es local)
+    const payloadImpresion = generarPayloadImpresion(facturaParaImprimir, {
+      nombre: "BODEGON (OFFLINE)",
+      rnc: "PENDIENTE",
+      tipo_impresora: 'pos' // Forzamos POS o buscamos en settings locales si existen
+    });
+
+    const printerResult = await enviarAImpresoraFiscal(payloadImpresion);
+
+    return res.status(201).json({ 
+      success: true, 
+      offline: true,
+      message: 'Venta procesada en MODO CONTINGENCIA (Sin red). La factura se sincronizará luego.',
+      numero_factura,
+      printer_success: printerResult.success,
+      printer_error: printerResult.error
+    });
+
+  } catch (error) {
+    console.error('[CONTINGENCIA] Error crítico en handleOfflineInvoice:', error);
+    res.status(500).json({ error: 'Falla crítica del sistema en modo offline' });
+  }
+};
+
 module.exports = { createInvoice, getInvoices, getInvoiceById, voidInvoice, reprintInvoice };
+
 

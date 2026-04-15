@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Search, Calendar, Clock } from 'lucide-react';
+import ContingenciaIndicator from '../ContingenciaIndicator';
+
 
 const Header = () => {
   const [dateTime, setDateTime] = useState(new Date());
@@ -48,7 +50,9 @@ const Header = () => {
             style={{ width: '300px', paddingLeft: '2.5rem', height: '38px', fontSize: '0.9rem' }}
           />
         </div>
+        <ContingenciaIndicator />
       </div>
+
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>

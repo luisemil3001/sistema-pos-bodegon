@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const contingenciaService = require('../services/contingenciaService');
+
 
 // Obtener todos los productos (con info de categoría)
 const getProducts = async (req, res) => {
@@ -11,12 +13,22 @@ const getProducts = async (req, res) => {
       ORDER BY p.nombre ASC
     `;
     const [rows] = await pool.query(query);
+    
+    // Actualizar cache de contingencia
+    contingenciaService.actualizarCacheProductos(rows);
+    
     res.json(rows);
   } catch (err) {
+    if (contingenciaService.esErrorDeConexion(err)) {
+      console.warn('[CONTINGENCIA] Devolviendo productos desde cache local...');
+      const cache = contingenciaService.obtenerProductosCache();
+      return res.json(cache);
+    }
     console.error(err);
     res.status(500).json({ error: 'Error al obtener productos' });
   }
 };
+
 
 // Obtener un solo producto
 const getProductById = async (req, res) => {

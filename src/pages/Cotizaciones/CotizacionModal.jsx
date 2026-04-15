@@ -1,8 +1,10 @@
 import React from 'react';
-import { X, Printer, Loader2, Play } from 'lucide-react';
+import { X, Printer, Loader2, Play, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { generateWhatsAppLink } from '../../utils/whatsappHelper';
 
-const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle }) => {
+
+const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings }) => {
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -143,12 +145,34 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle }) => {
             </button>
           )}
           <button 
+            onClick={() => {
+              const link = generateWhatsAppLink(cotizacion, settings);
+              if (link) window.open(link, '_blank');
+              else alert('Error al generar link de WhatsApp');
+            }}
+            style={{ 
+              padding: '0.5em 1em', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              backgroundColor: '#25D366', 
+              color: 'white', 
+              fontWeight: 'bold',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+            disabled={!cotizacion || loadingDetalle}
+          >
+            <MessageSquare size={18} /> WhatsApp
+          </button>
+          <button 
             onClick={handlePrint}
-            style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-main)' }}
+            style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer' }}
             disabled={!cotizacion || loadingDetalle}
           >
             <Printer size={18} /> Imprimir
           </button>
+
         </div>
       </div>
     </div>

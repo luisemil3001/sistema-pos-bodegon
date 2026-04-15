@@ -21,8 +21,8 @@ function checkMySQLAndStart() {
 function startBackend() {
   // 1. Definimos las rutas posibles según si es desarrollo o producción
   const baseDir = app.isPackaged 
-    ? path.join(process.resourcesPath, 'app', 'backend') 
-    : path.join(__dirname, 'backend');
+    ? path.join(process.resourcesPath, 'billing-api') 
+    : path.join(__dirname, 'billing-api');
   
   const backendPath = path.join(baseDir, 'index.js');
 

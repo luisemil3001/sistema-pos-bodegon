@@ -1,4 +1,7 @@
 import React from 'react';
+import { generateWhatsAppLink } from '../../utils/whatsappHelper';
+import { MessageSquare } from 'lucide-react';
+
 
 const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) => {
   if (!isOpen) return null;
@@ -132,9 +135,45 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
           <p style={{ textAlign: 'center', color: 'red' }}>Error en comprobante.</p>
         )}
 
-        <div className="no-print" style={{ display: 'flex', gap: '10px', marginTop: '1.5rem' }}>
-          <button onClick={handlePrint} style={{ flex: 1, padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>IMPRIMIR</button>
-          <button onClick={onClose} style={{ flex: 1, padding: '10px', backgroundColor: '#dc3545', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>CERRAR</button>
+        <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '1.5rem' }}>
+          <button 
+            onClick={handlePrint} 
+            style={{ flex: '1 1 120px', padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}
+          >
+            IMPRIMIR
+          </button>
+          
+          <button 
+            onClick={() => {
+              const link = generateWhatsAppLink(invoice, settings);
+              if (link) window.open(link, '_blank');
+              else alert('Error al generar link de WhatsApp');
+            }} 
+            style={{ 
+              flex: '1 1 200px', 
+              padding: '10px', 
+              backgroundColor: '#25D366', 
+              color: 'white', 
+              border: 'none', 
+              cursor: 'pointer', 
+              borderRadius: '4px', 
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <MessageSquare size={18} />
+            ENVIAR WHATSAPP
+          </button>
+
+          <button 
+            onClick={onClose} 
+            style={{ flex: '1 1 120px', padding: '10px', backgroundColor: '#dc3545', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}
+          >
+            CERRAR
+          </button>
         </div>
       </div>
 

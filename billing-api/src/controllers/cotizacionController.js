@@ -102,7 +102,7 @@ const createCotizacion = async (req, res) => {
 const getCotizaciones = async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT c.*, cl.nombre as cliente_nombre, cl.rnc_cedula, u.nombre as cajero_nombre
+      SELECT c.*, cl.nombre as cliente_nombre, cl.rnc_cedula, cl.telefono as cliente_telefono, u.nombre as cajero_nombre
       FROM cotizaciones c
       LEFT JOIN clientes cl ON c.cliente_id = cl.id
       LEFT JOIN usuarios u ON c.usuario_id = u.id
@@ -120,7 +120,7 @@ const getCotizacionById = async (req, res) => {
   const { id } = req.params;
   try {
     const [cot] = await pool.query(`
-      SELECT c.*, cl.nombre as cliente_nombre, cl.rnc_cedula, cl.direccion, u.nombre as cajero_nombre
+      SELECT c.*, cl.nombre as cliente_nombre, cl.rnc_cedula, cl.direccion, cl.telefono as cliente_telefono, u.nombre as cajero_nombre
       FROM cotizaciones c
       LEFT JOIN clientes cl ON c.cliente_id = cl.id
       LEFT JOIN usuarios u ON c.usuario_id = u.id

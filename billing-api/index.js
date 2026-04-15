@@ -44,6 +44,8 @@ app.use('/api/credit-notes', require('./src/routes/creditNoteRoutes'));
 app.use('/api/adjustments', require('./src/routes/adjustmentRoutes'));
 app.use('/api/cotizaciones', require('./src/routes/cotizacionRoutes'));
 app.use('/api/workstations', require('./src/routes/workstationRoutes'));
+app.use('/api/contingencia', require('./src/routes/contingenciaRoutes'));
+
 
 // --- MANEJO DE RUTAS NO ENCONTRADAS (404) ---
 app.use((req, res) => {

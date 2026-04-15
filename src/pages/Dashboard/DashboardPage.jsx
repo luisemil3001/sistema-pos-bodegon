@@ -104,8 +104,6 @@ const DashboardPage = () => {
                     warning={(stats?.alerta_stock || 0) > 0}
                     onClick={() => navigate('/inventario?filtro=stock')}
                 />
-                    onClick={() => navigate('/inventario?filtro=vencimiento')}
-                />
                 <StatCard 
                     title="Cotizaciones" 
                     value={stats?.cotizaciones_pendientes || 0} 

@@ -46,6 +46,11 @@ const POSPage = () => {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [lastInvoiceId, setLastInvoiceId] = useState(null);
 
+  // Estado para el modal de nuevo cliente rápido
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ rnc_cedula: '', nombre: '', telefono: '', direccion: '' });
+  const [savingCustomer, setSavingCustomer] = useState(false);
+
   useEffect(() => {
     api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
   }, []);
@@ -95,11 +100,14 @@ const POSPage = () => {
       const res = await processSale(metodo, selectedCustomer?.id || null);
       
       if (res && res.success) {
-        if (res.printer_success) {
+        if (res.offline) {
+          setSuccessMessage(`📴 MODO CONTINGENCIA: Venta guardada localmente (${res.numero_factura}). Se sincronizarará al volver la red.`);
+        } else if (res.printer_success) {
           setSuccessMessage(`✅ Factura generada e impresa: ${res.data.numero_factura}`);
         } else {
           setSuccessMessage(`⚠️ Factura generada (${res.data.numero_factura}) pero FALLÓ LA IMPRESIÓN: ${res.printer_error}`);
         }
+
         
         setLastInvoiceId(res.data.factura_id);
         setIsReceiptModalOpen(true);
@@ -138,6 +146,30 @@ const POSPage = () => {
       alert(res?.message || 'Error al guardar la cotización');
     }
     setProcessing(false);
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.nombre) {
+      alert("El nombre del cliente es obligatorio");
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const res = await api.post('/customers', newCustomer);
+      const createdCustomer = { id: res.data.id, ...newCustomer };
+      setCustomers([...customers, createdCustomer]);
+      setSelectedCustomer(createdCustomer);
+      setCustomerSearch('');
+      setIsCustomerModalOpen(false);
+      setNewCustomer({ rnc_cedula: '', nombre: '', telefono: '', direccion: '' });
+      setSuccessMessage('✅ Cliente registrado y seleccionado automáticamente');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.error || 'Error al guardar el cliente');
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
@@ -338,18 +370,39 @@ const POSPage = () => {
                 />
               </div>
 
-              {showCustomerDropdown && filteredCustomers.length > 0 && (
-                <div style={{ position: 'absolute', left: '1rem', right: '1rem', zIndex: 50, backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', maxHeight: '200px', overflowY: 'auto' }}>
-                  {filteredCustomers.map(c => (
-                    <div
-                      key={c.id}
-                      onMouseDown={() => { setSelectedCustomer(c); setCustomerSearch(''); setShowCustomerDropdown(false); }}
-                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-                    >
-                      <div style={{ fontWeight: '500' }}>{c.nombre}</div>
-                      {c.rnc_cedula && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.rnc_cedula}</div>}
+              {showCustomerDropdown && (
+                <div style={{ position: 'absolute', left: '1rem', right: '1rem', zIndex: 50, backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', maxHeight: '250px', overflowY: 'auto' }}>
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map(c => (
+                      <div
+                        key={c.id}
+                        onMouseDown={() => { setSelectedCustomer(c); setCustomerSearch(''); setShowCustomerDropdown(false); }}
+                        style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+                      >
+                        <div style={{ fontWeight: '500' }}>{c.nombre}</div>
+                        {c.rnc_cedula && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.rnc_cedula}</div>}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                      No se encontraron resultados
                     </div>
-                  ))}
+                  )}
+
+                  {/* Siempre mostrar opción de crear si hay algo escrito */}
+                  {customerSearch.length > 2 && (
+                    <div 
+                      onMouseDown={(e) => { 
+                        e.preventDefault(); 
+                        setNewCustomer({ ...newCustomer, rnc_cedula: customerSearch, nombre: '' });
+                        setIsCustomerModalOpen(true); 
+                        setShowCustomerDropdown(false);
+                      }}
+                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--border)' }}
+                    >
+                      <Plus size={16} /> Registrar nuevo cliente: "{customerSearch}"
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -490,6 +543,74 @@ const POSPage = () => {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button onClick={() => { setIsWeightModalOpen(false); setManualWeight(''); }} style={{ flex: 1, padding: '1rem', background: 'transparent', color: 'white', border: '1px solid var(--border)' }}>Cancelar</button>
               <button onClick={addProductWithWeight} style={{ flex: 1, padding: '1rem', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 'bold' }}>Agregar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Registro Rápido de Cliente */}
+      {isCustomerModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(2px)' }}>
+          <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: 'var(--radius)', width: '400px', border: '1px solid var(--border)', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ marginTop: 0, fontSize: '1.25rem', color: 'var(--primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <User size={20} /> Registrar Cliente Express
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Cédula / RIF</label>
+                <input 
+                  type="text" 
+                  value={newCustomer.rnc_cedula} 
+                  autoFocus
+                  onChange={e => setNewCustomer({...newCustomer, rnc_cedula: e.target.value})}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Nombre / Razón Social <span style={{color: 'red'}}>*</span></label>
+                <input 
+                  type="text" 
+                  value={newCustomer.nombre} 
+                  onChange={e => setNewCustomer({...newCustomer, nombre: e.target.value})}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Teléfono (WhatsApp)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: 04141234567"
+                  value={newCustomer.telefono} 
+                  onChange={e => setNewCustomer({...newCustomer, telefono: e.target.value})}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Dirección</label>
+                <input 
+                  type="text" 
+                  value={newCustomer.direccion} 
+                  onChange={e => setNewCustomer({...newCustomer, direccion: e.target.value})}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: 'var(--bg-input)' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button 
+                onClick={() => setIsCustomerModalOpen(false)}
+                style={{ flex: 1, padding: '0.75rem', background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleCreateCustomer}
+                disabled={!newCustomer.nombre || savingCustomer}
+                style={{ flex: 1, padding: '0.75rem', backgroundColor: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', borderRadius: 'var(--radius)', opacity: (!newCustomer.nombre || savingCustomer) ? 0.5 : 1 }}
+              >
+                {savingCustomer ? 'Guardando...' : 'Guardar y Seleccionar'}
+              </button>
             </div>
           </div>
         </div>

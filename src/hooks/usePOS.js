@@ -168,9 +168,11 @@ const usePOS = () => {
       return { 
         success: true, 
         data: res.data,
+        offline: res.data.offline,
         printer_success: res.data.printer_success,
         printer_error: res.data.printer_error
       };
+
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Error al procesar la venta';
       return { success: false, message: errorMsg };

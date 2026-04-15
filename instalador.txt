@@ -1,0 +1,17 @@
+Sí, absolutamente! De hecho, llevarlo en un pendrive es muchas veces más rápido y seguro que depender del internet local del cliente para descargar.
+
+Para que todo fluya perfecto al usar un pendrive, esta es la mejor estrategia (y la más segura para la base de datos):
+
+1. Qué guardar en el pendrive (En tu computadora)
+Guarda en el pendrive la carpeta de tu proyecto (mi-primer-react) completa. Para que no pese tanto y copie rápido en el pendrive, puedes borrar las carpetas node_modules (adentro del proyecto principal y del backend), ya que el archivo .bat las volverá a descargar o crear en la computadora destino.
+
+También te recomiendo descargar el instalador de Node.js de Windows (el que terminan en .msi) y guardarlo en el pendrive por si el cliente no lo tiene instalado.
+
+2. Qué hacer frente al cliente (En su computadora)
+Conectas el pendrive y copias la carpeta del proyecto mi-primer-react a sus documentos o al disco C (donde prefieras dejar el código fuente por seguridad).
+Si la máquina del cliente no tiene Node.js, le instalas el .msi que llevaste en el pendrive.
+Entras a la carpeta que copiaste y le das doble click a INSTALAR_SISTEMA.bat.
+El asistente te guiará para configurar la base de datos de MySQL de ese cliente.
+Cuando termine, allí mismo corres el comando npm run make para que se genere el .exe final instalable, optimizado directamente para la máquina de ese cliente.
+Vas a la carpeta out/make/... y se lo instalas formalmente.
+¿Qué te parece? Es muy limpio, te asegura de que el código no sufra problemas, te configura todo el SQL automáticamente y dejas un acceso directo profesional de Windows instalado en su PC.
