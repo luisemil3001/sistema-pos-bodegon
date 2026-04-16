@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import usePOS from '../../hooks/usePOS';
 import useCaja from '../../hooks/useCaja';
+import { formatCurrency, formatQty } from '../../utils/format';
 import ReceiptModal from '../Invoices/ReceiptModal';
 import api from '../../api/api';
 import { useNavigate } from 'react-router-dom';
@@ -328,9 +329,14 @@ const POSPage = () => {
                 }}
               >
                 <div style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '1.05rem', color: 'var(--text-main)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginTop: 'auto' }}>
-                  <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.1rem' }}>${parseFloat(p.precio_venta).toFixed(2)}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Stock: {p.stock}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.2rem', marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '1.1rem' }}>Bs. {formatCurrency(parseFloat(p.precio_venta) * (settings?.tasa_dolar || 1))}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Stock: {p.stock}</span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+                    $ {formatCurrency(p.precio_venta)}
+                  </div>
                 </div>
               </button>
             ))
@@ -475,8 +481,11 @@ const POSPage = () => {
                 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.1rem' }}>{item.nombre}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '0.4rem' }}>
-                      <span>${parseFloat(item.precio_venta).toFixed(2)} x {item.es_pesable ? item.cantidad.toFixed(3) : item.cantidad} {item.es_pesable ? 'kg' : 'unid'}</span>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      <span style={{ fontWeight: '500', color: 'var(--success)' }}>
+                        {formatQty(item.cantidad)} x Bs. {formatCurrency(item.precio_venta * (settings?.tasa_dolar || 1))}
+                      </span>
+                      <span>| ${formatCurrency(item.precio_venta)} x {formatQty(item.cantidad)} {item.es_pesable ? 'kg' : 'unid'}</span>
                       {item.aplica_iva && <span style={{ color: 'var(--primary)', fontWeight: '500' }}>+IVA</span>}
                     </div>
                   </div>
@@ -484,12 +493,12 @@ const POSPage = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-input)', padding: '0.25rem', borderRadius: 'var(--radius)' }}>
                       <button onClick={() => updateQuantity(item.id, item.es_pesable ? -0.1 : -1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Minus size={14} /></button>
-                      <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}>{item.es_pesable ? item.cantidad.toFixed(3) : item.cantidad}</span>
+                      <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}>{formatQty(item.cantidad)}</span>
                       <button onClick={() => updateQuantity(item.id, item.es_pesable ? 0.1 : 1)} style={{ padding: '0.3rem', backgroundColor: 'transparent', color: 'var(--text-main)' }}><Plus size={14} /></button>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: '100px' }}>
                       <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.1rem' }}>
-                        ${(item.precio_venta * item.cantidad * (item.aplica_iva ? (1 + (settings ? parseFloat(settings.itbis_tasa)/100 : 0.16)) : 1)).toFixed(2)}
+                        ${formatCurrency(item.precio_venta * item.cantidad * (item.aplica_iva ? (1 + (settings ? parseFloat(settings.itbis_tasa)/100 : 0.16)) : 1))}
                       </div>
                     </div>
                   </div>
@@ -502,22 +511,27 @@ const POSPage = () => {
         <div style={{ flexShrink: 0, backgroundColor: 'var(--bg-main)', borderTop: '2px solid var(--border)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             <span>Subtotal</span>
-            <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>${totals.subtotal.toFixed(2)}</span>
+            <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>${formatCurrency(totals.subtotal)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
             <span>IVA ({(settings ? parseFloat(settings.itbis_tasa) : 16)}%)</span>
-            <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>${totals.iva.toFixed(2)}</span>
+            <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>${formatCurrency(totals.iva)}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderTop: '1px dashed var(--border)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-              <span>Total USD</span>
-              <span>${totals.total.toFixed(2)}</span>
+            {settings && settings.tasa_dolar && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.6rem', fontWeight: 'bold', color: 'var(--success)', backgroundColor: 'rgba(34, 197, 94, 0.05)', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--success)' }}>
+                <span style={{ fontSize: '1rem', alignSelf: 'center' }}>Total Bs.</span>
+                <span>Bs. {formatCurrency(totals.total * parseFloat(settings.tasa_dolar))}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-muted)', padding: '0 0.5rem' }}>
+              <span>Ref. USD</span>
+              <span>${formatCurrency(totals.total)}</span>
             </div>
             {settings && settings.tasa_dolar && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: '600', color: 'var(--success)', backgroundColor: 'rgba(34, 197, 94, 0.05)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
-                <span style={{ fontSize: '0.8rem', alignSelf: 'center', opacity: 0.8 }}>Equivalente Bs.</span>
-                <span>Bs. {(totals.total * parseFloat(settings.tasa_dolar)).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
+               <div style={{ fontSize: '0.7rem', textAlign: 'right', color: 'var(--text-muted)', fontStyle: 'italic', padding: '0 0.5rem' }}>
+                 Tasa BCV: {formatCurrency(settings.tasa_dolar)}
+               </div>
             )}
           </div>
 

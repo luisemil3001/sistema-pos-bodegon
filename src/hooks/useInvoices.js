@@ -1,50 +1,47 @@
 import { useState, useCallback } from 'react';
 import api from '../api/api';
+import useErrorHandler from './useErrorHandler';
 
 const useInvoices = () => {
   const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { error, isLoading, handleError, clearError, wrapAsync } = useErrorHandler();
 
   const fetchInvoices = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.get('/invoices');
+      const res = await wrapAsync(() => api.get('/invoices'));
       setInvoices(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al cargar el historial de facturas');
-    } finally {
-      setLoading(false);
+      // Error ya manejado por wrapAsync
     }
-  }, []);
+  }, [wrapAsync]);
 
   const fetchInvoiceDetalle = async (id) => {
     try {
-      const res = await api.get(`/invoices/${id}`);
-      return { success: true, data: res.data };
+      const data = await wrapAsync(() => api.get(`/invoices/${id}`));
+      return { success: true, data: data.data };
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Error al cargar detalle' };
+      return { success: false, message: error || 'Error al cargar detalle' };
     }
   };
 
   const voidInvoice = async (id) => {
     try {
-      const res = await api.put(`/invoices/${id}/void`);
+      const res = await wrapAsync(() => api.put(`/invoices/${id}/void`));
       fetchInvoices(); // Recargar lista
       return { success: true, message: res.data.message };
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Error al anular factura' };
+      return { success: false, message: error || 'Error al anular factura' };
     }
   };
 
   return {
     invoices,
-    loading,
+    loading: isLoading,
     error,
     fetchInvoices,
     fetchInvoiceDetalle,
-    voidInvoice
+    voidInvoice,
+    clearError
   };
 };
 

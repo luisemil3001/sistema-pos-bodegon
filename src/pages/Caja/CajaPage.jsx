@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, CheckCircle, AlertTriangle, Printer, ArrowLeft, Search, Eye } from 'lucide-react';
 import useCaja from '../../hooks/useCaja';
+import { formatCurrency } from '../../utils/format';
 
 const CajaPage = () => {
     const { cajaAbierta, loading, error, abrirCaja, cerrarCaja, getEstaciones, obtenerPreview } = useCaja();
@@ -102,17 +103,17 @@ const CajaPage = () => {
                 <div class="row"><span>Cajero:</span><span class="bold">${resumenCierre.cajero || 'Cajero'}</span></div>
                 <div class="row"><span>Estación:</span><span class="bold">${resumenCierre.estacion || 'General'}</span></div>
                 <div class="sep"></div>
-                <div class="row"><span>Fondo de Apertura</span><span class="bold">$${resumenCierre.apertura.toFixed(2)}</span></div>
+                <div class="row"><span>Fondo de Apertura</span><span class="bold">$${formatCurrency(resumenCierre.apertura)}</span></div>
                 <div class="sep-dot"></div>
-                <div class="row"><span>Ventas en Efectivo</span><span class="bold">+$${resumenCierre.ventas_efectivo.toFixed(2)}</span></div>
+                <div class="row"><span>Ventas en Efectivo</span><span class="bold">+$${formatCurrency(resumenCierre.ventas_efectivo)}</span></div>
                 <div class="sep-dot"></div>
-                <div class="row"><span>Ventas Tarjeta/Transf.</span><span class="bold">$${resumenCierre.ventas_tarjeta.toFixed(2)}</span></div>
+                <div class="row"><span>Ventas Tarjeta/Transf.</span><span class="bold">$${formatCurrency(resumenCierre.ventas_tarjeta)}</span></div>
                 <div class="sep-dot"></div>
-                <div class="total-row"><span>EFECTIVO ESPERADO</span><span>$${resumenCierre.efectivo_esperado.toFixed(2)}</span></div>
-                <div class="total-row" style="border-top:none"><span>EFECTIVO CONTADO</span><span>$${resumenCierre.efectivo_real.toFixed(2)}</span></div>
+                <div class="total-row"><span>EFECTIVO ESPERADO</span><span>$${formatCurrency(resumenCierre.efectivo_esperado)}</span></div>
+                <div class="total-row" style="border-top:none"><span>EFECTIVO CONTADO</span><span>$${formatCurrency(resumenCierre.efectivo_real)}</span></div>
                 <div class="box">
                     <div style="font-size:12px">DIFERENCIA</div>
-                    <div class="amount">${resumenCierre.diferencia > 0 ? '+' : ''}$${resumenCierre.diferencia.toFixed(2)}</div>
+                    <div class="amount">${resumenCierre.diferencia > 0 ? '+' : ''}$${formatCurrency(resumenCierre.diferencia)}</div>
                     <div style="font-size:11px; margin-top:4px">${resumenCierre.diferencia === 0 ? 'CUADRE PERFECTO' : resumenCierre.diferencia > 0 ? 'SOBRANTE' : 'FALTANTE'}</div>
                 </div>
                 <div class="sep"></div>
@@ -154,24 +155,24 @@ const CajaPage = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                             <div>
                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Fondo de Apertura</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${resumenCierre.apertura.toFixed(2)}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${formatCurrency(resumenCierre.apertura)}</div>
                             </div>
                             <div>
                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Ventas en Efectivo</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${resumenCierre.ventas_efectivo.toFixed(2)}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${formatCurrency(resumenCierre.ventas_efectivo)}</div>
                             </div>
                             <div>
                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Efectivo Esperado</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary)' }}>${resumenCierre.efectivo_esperado.toFixed(2)}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary)' }}>${formatCurrency(resumenCierre.efectivo_esperado)}</div>
                             </div>
                             <div>
                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Efectivo Real (Contado)</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${resumenCierre.efectivo_real.toFixed(2)}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>${formatCurrency(resumenCierre.efectivo_real)}</div>
                             </div>
                             <div>
                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Diferencia</div>
                                 <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: resumenCierre.diferencia === 0 ? 'var(--success)' : 'var(--danger)' }}>
-                                    ${resumenCierre.diferencia.toFixed(2)}
+                                    ${formatCurrency(resumenCierre.diferencia)}
                                 </div>
                             </div>
                         </div>
@@ -271,7 +272,7 @@ const CajaPage = () => {
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <span style={{ color: 'var(--text-muted)' }}>Monto Inicial:</span>
-                                                <span style={{ fontWeight: '600' }}>${parseFloat(cajaAbierta.monto_apertura).toFixed(2)}</span>
+                                                <span style={{ fontWeight: '600' }}>${formatCurrency(cajaAbierta.monto_apertura)}</span>
                                             </div>
                                         </div>
 
@@ -330,19 +331,19 @@ const CajaPage = () => {
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                                             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Fondo de Apertura</div>
-                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${previewData.apertura.toFixed(2)}</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${formatCurrency(previewData.apertura)}</div>
                                         </div>
                                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                                             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Ventas en Efectivo</div>
-                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>+${previewData.ventas_efectivo.toFixed(2)}</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>+${formatCurrency(previewData.ventas_efectivo)}</div>
                                         </div>
                                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                                             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Ventas Tarjeta / Transf.</div>
-                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${previewData.ventas_tarjeta.toFixed(2)}</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${formatCurrency(previewData.ventas_tarjeta)}</div>
                                         </div>
                                         <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.08)', padding: '1.25rem', borderRadius: 'var(--radius)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                                             <div style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.3rem' }}>Efectivo Esperado en Gaveta</div>
-                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>${previewData.efectivo_esperado.toFixed(2)}</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>${formatCurrency(previewData.efectivo_esperado)}</div>
                                         </div>
                                     </div>
 
@@ -358,12 +359,12 @@ const CajaPage = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                             <div>
                                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Usted contó:</div>
-                                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>${previewData.efectivo_real.toFixed(2)}</div>
+                                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>${formatCurrency(previewData.efectivo_real)}</div>
                                             </div>
                                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>vs</div>
                                             <div>
                                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>El sistema esperaba:</div>
-                                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${previewData.efectivo_esperado.toFixed(2)}</div>
+                                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${formatCurrency(previewData.efectivo_esperado)}</div>
                                             </div>
                                         </div>
                                         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
@@ -371,7 +372,7 @@ const CajaPage = () => {
                                                 {previewData.diferencia === 0 ? '✅ CUADRE PERFECTO' : previewData.diferencia > 0 ? '⚠️ SOBRANTE EN CAJA' : '🔴 FALTANTE EN CAJA'}
                                             </div>
                                             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: previewData.diferencia === 0 ? 'var(--success)' : 'var(--danger)' }}>
-                                                {previewData.diferencia > 0 ? '+' : ''}${previewData.diferencia.toFixed(2)}
+                                                {previewData.diferencia > 0 ? '+' : ''}${formatCurrency(previewData.diferencia)}
                                             </div>
                                         </div>
                                     </div>

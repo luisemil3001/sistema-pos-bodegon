@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import useCustomers from '../../hooks/useCustomers';
+import usePagination from '../../hooks/usePagination';
 import CustomerModal from './CustomerModal';
+import AlertMessage from '../../components/AlertMessage';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
 
 const CustomersPage = () => {
-  const { customers, loading, error, fetchCustomers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, loading, error, fetchCustomers, addCustomer, updateCustomer, deleteCustomer, clearError } = useCustomers();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,22 +31,38 @@ const CustomersPage = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`¿Está seguro que desea eliminar al cliente "${name}"?`)) {
       const res = await deleteCustomer(id);
-      if (!res.success) alert(res.message);
+      if (!res.success) {
+        // El error ya se maneja en el hook
+        return;
+      }
     }
   };
 
   const handleSaveModal = async (customerData) => {
-    if (editingCustomer) {
-      return await updateCustomer(editingCustomer.id, customerData);
-    } else {
-      return await addCustomer(customerData);
+    const res = editingCustomer
+      ? await updateCustomer(editingCustomer.id, customerData)
+      : await addCustomer(customerData);
+
+    if (res.success) {
+      setIsModalOpen(false);
+      setEditingCustomer(null);
     }
+    // El error ya se maneja en el hook
+    return res;
   };
 
   const filteredCustomers = customers.filter(c => 
     c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (c.rnc_cedula && c.rnc_cedula.includes(searchTerm))
   );
+
+  const {
+    paginatedItems: displayedCustomers,
+    currentPage,
+    totalPages,
+    totalItems: filteredCount,
+    goToPage
+  } = usePagination(filteredCustomers, 15); // 15 clientes por página
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
@@ -63,17 +83,23 @@ const CustomersPage = () => {
 
       {/* Filters & Errors */}
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          {error}
-        </div>
+        <AlertMessage
+          type="error"
+          message={error}
+          onClose={clearError}
+        />
+      )}
+
+      {loading && (
+        <LoadingSpinner text="Cargando clientes..." />
       )}
 
       <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre o RNC/Cédula..." 
+          <input
+            type="text"
+            placeholder="Buscar por nombre o RNC/Cédula..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '100%', paddingLeft: '2.5rem' }}
@@ -84,7 +110,9 @@ const CustomersPage = () => {
       {/* Data Table */}
       <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {loading && customers.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando clientes...</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <LoadingSpinner text="Cargando clientes..." />
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -104,7 +132,7 @@ const CustomersPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map(c => (
+                  displayedCustomers.map(c => (
                     <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '1rem', fontWeight: '500' }}>{c.nombre}</td>
                       <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{c.rnc_cedula || 'Consumidor Final'}</td>
@@ -139,10 +167,23 @@ const CustomersPage = () => {
         )}
       </div>
 
-      <CustomerModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        customer={editingCustomer} 
+      {/* Paginación */}
+      {filteredCustomers.length > 15 && (
+        <div style={{ marginTop: '1rem' }}>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredCount}
+            itemsPerPage={15}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
+
+      <CustomerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        customer={editingCustomer}
         onSave={handleSaveModal}
       />
     </div>

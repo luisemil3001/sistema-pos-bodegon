@@ -3,6 +3,7 @@ import { BookOpen, Calendar, Download, FileText, FileDown, PieChart } from 'luci
 import useAccounting from '../../hooks/useAccounting';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { formatCurrency } from '../../utils/format';
 
 const AccountingPage = () => {
   const { data, resumen, loading, error, fetchLibroVentas, fetchLibroCompras, fetchResumenIva, clearData } = useAccounting();
@@ -272,9 +273,9 @@ const AccountingPage = () => {
                         <td style={{ padding: '1rem' }}>{new Date(v.fecha).toLocaleDateString()}</td>
                         <td style={{ padding: '1rem' }}>{v.numero_factura}</td>
                         <td style={{ padding: '1rem' }}>{v.cliente_nombre || 'Consumidor Final'}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{parseFloat(v.tasa_cambio_usada).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>${parseFloat(v.total).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--success)' }}>Bs. {parseFloat(v.total_bs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{formatCurrency(v.tasa_cambio_usada)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>${formatCurrency(v.total)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--success)' }}>Bs. {formatCurrency(v.total_bs)}</td>
                       </tr>
                     ))
                   )}
@@ -305,9 +306,9 @@ const AccountingPage = () => {
                         <td style={{ padding: '1rem' }}>{c.numero_factura_proveedor}</td>
                         <td style={{ padding: '1rem' }}>{c.proveedor_nombre}</td>
                         <td style={{ padding: '1rem' }}>{c.rnc_cedula || '-'}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>${parseFloat(c.base_imponible).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--info)' }}>${parseFloat(c.iva_soportado).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>${parseFloat(c.total).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>${formatCurrency(c.base_imponible)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--info)' }}>${formatCurrency(c.iva_soportado)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>${formatCurrency(c.total)}</td>
                       </tr>
                     ))
                   )}
@@ -323,14 +324,14 @@ const AccountingPage = () => {
                   
                   <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '600' }}>IVA Retenido (Ventas)</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${parseFloat(resumen.debito_fiscal).toFixed(2)}</div>
-                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {parseFloat(resumen.debito_fiscal_bs).toLocaleString('es-VE')}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${formatCurrency(resumen.debito_fiscal)}</div>
+                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {formatCurrency(resumen.debito_fiscal_bs)}</div>
                   </div>
 
                   <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '600' }}>IVA Soportado (Compras)</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--info)' }}>${parseFloat(resumen.credito_fiscal).toFixed(2)}</div>
-                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {parseFloat(resumen.credito_fiscal_bs).toLocaleString('es-VE')}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--info)' }}>${formatCurrency(resumen.credito_fiscal)}</div>
+                    <div style={{ fontSize: '1.1rem', color: 'var(--success)', fontWeight: '600' }}>Bs. {formatCurrency(resumen.credito_fiscal_bs)}</div>
                   </div>
 
                   <div style={{ gridColumn: '1 / -1', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -343,7 +344,7 @@ const AccountingPage = () => {
                       </div>
                     </div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: resumen.cuota_tributaria > 0 ? 'var(--danger)' : '#10b981' }}>
-                      ${Math.abs(resumen.cuota_tributaria).toFixed(2)}
+                      ${formatCurrency(Math.abs(resumen.cuota_tributaria))}
                     </div>
                   </div>
 

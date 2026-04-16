@@ -1,5 +1,5 @@
-import React from 'react';
 import { X, Package, ShoppingBag } from 'lucide-react';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 const PurchaseDetailModal = ({ isOpen, onClose, purchase, loading }) => {
   if (!isOpen) return null;
@@ -92,9 +92,9 @@ const PurchaseDetailModal = ({ isOpen, onClose, purchase, loading }) => {
                           <span style={{ fontWeight: '500' }}>{item.producto_nombre}</span>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.codigo_barras || 'S/N'}</div>
                         </td>
-                        <td style={{ padding: '0.75rem 0', textAlign: 'center' }}>{item.cantidad}</td>
-                        <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>${parseFloat(item.costo_unitario).toFixed(2)}</td>
-                        <td style={{ padding: '0.75rem 0', textAlign: 'right', fontWeight: 'bold' }}>${parseFloat(item.subtotal).toFixed(2)}</td>
+                        <td style={{ padding: '0.75rem 0', textAlign: 'center' }}>{formatQty(item.cantidad)}</td>
+                        <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>${formatCurrency(item.costo_unitario)}</td>
+                        <td style={{ padding: '0.75rem 0', textAlign: 'right', fontWeight: 'bold' }}>${formatCurrency(item.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -110,9 +110,9 @@ const PurchaseDetailModal = ({ isOpen, onClose, purchase, loading }) => {
         {/* Footer con Totales */}
         <div style={{ padding: '1.5rem', borderTop: '2px solid var(--border)', backgroundColor: 'var(--bg-sidebar)', display: 'flex', justifyContent: 'flex-end' }}>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Subtotal: ${parseFloat(purchase?.subtotal || 0).toFixed(2)}</div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>ITBIS: ${parseFloat(purchase?.itbis || 0).toFixed(2)}</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '0.25rem' }}>Total Factura: ${parseFloat(purchase?.total || 0).toFixed(2)}</div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Subtotal: ${formatCurrency(purchase?.subtotal || 0)}</div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>IVA: ${formatCurrency(purchase?.itbis || 0)}</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '0.25rem' }}>Total Factura: ${formatCurrency(purchase?.total || 0)}</div>
           </div>
         </div>
 

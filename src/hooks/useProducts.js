@@ -1,71 +1,67 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/api';
+import useErrorHandler from './useErrorHandler';
 
 const useProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { error, isLoading, handleError, clearError, wrapAsync } = useErrorHandler();
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.get('/products');
+      const res = await wrapAsync(() => api.get('/products'));
       setProducts(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al cargar productos');
-    } finally {
-      setLoading(false);
+      // Error ya manejado por wrapAsync
     }
-  }, []);
+  }, [wrapAsync]);
 
   const fetchCategories = useCallback(async () => {
     try {
       const res = await api.get('/categories');
       setCategories(res.data);
     } catch (err) {
-      console.error('Error al cargar categorías', err);
+      handleError(err, 'Error al cargar categorías');
     }
-  }, []);
+  }, [handleError]);
 
   const fetchSuppliers = useCallback(async () => {
     try {
       const res = await api.get('/suppliers');
       setSuppliers(res.data);
     } catch (err) {
-      console.error('Error al cargar proveedores', err);
+      handleError(err, 'Error al cargar proveedores');
     }
-  }, []);
+  }, [handleError]);
 
   const addProduct = async (productData) => {
     try {
-      await api.post('/products', productData);
+      await wrapAsync(() => api.post('/products', productData));
       await fetchProducts();
       return { success: true };
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Error al crear producto' };
+      return { success: false, message: error || 'Error al crear producto' };
     }
   };
 
   const updateProduct = async (id, productData) => {
     try {
-      await api.put(`/products/${id}`, productData);
+      await wrapAsync(() => api.put(`/products/${id}`, productData));
       await fetchProducts();
       return { success: true };
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Error al actualizar producto' };
+      return { success: false, message: error || 'Error al actualizar producto' };
     }
   };
 
   const deleteProduct = async (id) => {
     try {
-      await api.delete(`/products/${id}`);
+      await wrapAsync(() => api.delete(`/products/${id}`));
       await fetchProducts();
       return { success: true };
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Error al eliminar producto' };
+      return { success: false, message: error || 'Error al eliminar producto' };
     }
   };
 
@@ -73,14 +69,15 @@ const useProducts = () => {
     products,
     categories,
     suppliers,
-    loading,
+    loading: isLoading,
     error,
     fetchProducts,
     fetchCategories,
     fetchSuppliers,
     addProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    clearError
   };
 };
 

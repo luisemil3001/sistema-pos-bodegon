@@ -18,6 +18,7 @@ import {
 import { Bar, Pie } from 'react-chartjs-2';
 import { useNavigate } from 'react-router-dom';
 import useDashboard from '../../hooks/useDashboard';
+import { formatCurrency } from '../../utils/format';
 
 ChartJS.register(
     CategoryScale,
@@ -76,23 +77,23 @@ const DashboardPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
                 <StatCard 
                     title="Ventas de Hoy" 
-                    value={`$${(stats?.hoy?.total || 0).toFixed(2)}`} 
-                    extraValue={`Bs. ${(stats?.hoy?.total_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}
+                    value={`$${formatCurrency(stats?.hoy?.total || 0)}`} 
+                    extraValue={`Bs. ${formatCurrency(stats?.hoy?.total_bs || 0)}`}
                     icon={<DollarSign size={24} />} 
                     color="#38bdf8" 
                     subtitle={`${stats?.hoy?.cantidad || 0} facturas emitidas`}
                 />
                 <StatCard 
                     title="Promedio de Venta" 
-                    value={`$${(stats?.hoy?.promedio || 0).toFixed(2)}`} 
+                    value={`$${formatCurrency(stats?.hoy?.promedio || 0)}`} 
                     icon={<TrendingUp size={24} />} 
                     color="#22c55e" 
                     subtitle="Ticket promedio por cliente"
                 />
                 <StatCard 
                     title="Ventas del Mes" 
-                    value={`$${(stats?.mes?.total || 0).toFixed(2)}`} 
-                    extraValue={`Bs. ${(stats?.mes?.total_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}
+                    value={`$${formatCurrency(stats?.mes?.total || 0)}`} 
+                    extraValue={`Bs. ${formatCurrency(stats?.mes?.total_bs || 0)}`}
                     icon={<ShoppingBag size={24} />} 
                     color="#a855f7" 
                     subtitle="Acumulado periodo actual"
@@ -162,10 +163,10 @@ const DashboardPage = () => {
                                 <div style={{ fontWeight: '600' }}>{p.nombre}</div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.cantidad} unidades vendidas</div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>${parseFloat(p.total).toFixed(2)}</div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Generado</div>
-                            </div>
+                             <div style={{ textAlign: 'right' }}>
+                                 <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Bs. {formatCurrency(p.total_bs || 0)}</div>
+                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>${formatCurrency(p.total)} USD</div>
+                             </div>
                         </div>
                     ))}
                 </div>

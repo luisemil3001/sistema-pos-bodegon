@@ -1,6 +1,7 @@
 import React from 'react';
 import { generateWhatsAppLink } from '../../utils/whatsappHelper';
 import { MessageSquare } from 'lucide-react';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 
 const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) => {
@@ -8,10 +9,10 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
 
   const handlePrint = () => { window.print(); };
 
-  const formatNum = (val) => {
-    const n = parseFloat(val);
-    return isNaN(n) ? "0.00" : n.toFixed(2);
-  };
+  const formatNum = formatCurrency;
+
+  const tasa = parseFloat(invoice?.tasa_cambio_usada || settings?.tasa_dolar || 1);
+  const toBs = (val) => (parseFloat(val || 0) * tasa);
 
   const getClienteNombre = () => {
     if (!invoice) return 'Consumidor Final';
@@ -77,6 +78,9 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
               <div style={{ borderBottom: '1px dashed #000', margin: '5px 0' }}></div>
               <div><strong>CLIENTE:</strong> {getClienteNombre()}</div>
               {getIdentificacion() && <div><strong>ID/CED:</strong> {getIdentificacion()}</div>}
+              {(invoice.cliente_telefono || invoice.cliente?.telefono) && (
+                <div><strong>TEL:</strong> {invoice.cliente_telefono || invoice.cliente?.telefono}</div>
+              )}
               {getDireccionCliente() && (
                 <div style={{ textTransform: 'uppercase' }}>
                   <strong>DIR:</strong> {getDireccionCliente()}
@@ -97,9 +101,9 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
               <tbody>
                 {invoice.items?.map((item, i) => (
                   <tr key={i}>
-                    <td>{item.cantidad}</td>
+                    <td>{formatQty(item.cantidad)}</td>
                     <td style={{ padding: '0 2px' }}>{item.producto_nombre || item.nombre}</td>
-                    <td style={{ textAlign: 'right' }}>${formatNum(item.precio_unitario * item.cantidad)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatNum(toBs(item.precio_unitario * item.cantidad))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -107,35 +111,33 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
 
             <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '5px', fontSize: '0.9rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>SUBTOTAL:</span> <span>${formatNum(invoice.subtotal)}</span>
+                <span>SUBTOTAL:</span> <span>Bs. {formatNum(toBs(invoice.subtotal))}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>IVA ({settings?.itbis_tasa || 16}%):</span> <span>${formatNum(getIVA())}</span>
+                <span>IVA ({settings?.itbis_tasa || 16}%):</span> <span>Bs. {formatNum(toBs(getIVA()))}</span>
               </div>
               {invoice?.igtf_monto > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#854d0e', fontWeight: '500' }}>
-                  <span>IGTF ({settings?.igtf_tasa || 3}%):</span> <span>${formatNum(invoice.igtf_monto)}</span>
+                  <span>IGTF ({settings?.igtf_tasa || 3}%):</span> <span>Bs. {formatNum(toBs(invoice.igtf_monto))}</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '1px' }}>
-                <span>TOTAL $:</span> <span>${formatNum(invoice.total)}</span>
+                <span>TOTAL Bs:</span> <span>Bs. {formatNum(toBs(invoice.total))}</span>
               </div>
 
-              {/* SECCIÓN DE CONVERSIÓN A BOLÍVARES (SENIAT REQUIREMENT) */}
-              {(invoice.tasa_cambio_usada || settings?.tasa_dolar) && (
-                <div style={{ borderTop: '1px solid #000', marginTop: '8px', paddingTop: '5px' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#666', textAlign: 'center', marginBottom: '3px' }}>
-                    TASA DE CAMBIO: Bs. {formatNum(invoice.tasa_cambio_usada || settings.tasa_dolar)}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem' }}>
-                    <span>TOTAL Bs:</span> 
-                    <span>Bs. {((parseFloat(invoice.total) || 0) * (parseFloat(invoice.tasa_cambio_usada || settings.tasa_dolar || 1))).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ fontSize: '0.65rem', textAlign: 'center', marginTop: '4px', fontStyle: 'italic' }}>
-                    Monto expresado en moneda nacional para fines legales.
-                  </div>
+              {/* SECCIÓN DE REFERENCIA EN DÓLARES (AHORA COMO NOTA SECUNDARIA) */}
+              <div style={{ borderTop: '1px solid #000', marginTop: '8px', paddingTop: '5px' }}>
+                <div style={{ fontSize: '0.7rem', color: '#666', textAlign: 'center', marginBottom: '3px' }}>
+                  TASA DE CAMBIO: Bs. {formatNum(tasa)}
                 </div>
-              )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600', fontSize: '0.9rem' }}>
+                  <span>REF. USD:</span> 
+                  <span>$ {formatNum(parseFloat(invoice.total))}</span>
+                </div>
+                <div style={{ fontSize: '0.65rem', textAlign: 'center', marginTop: '4px', fontStyle: 'italic' }}>
+                  Monto expresado en moneda nacional según normativa vigente.
+                </div>
+              </div>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '0.7rem' }}>

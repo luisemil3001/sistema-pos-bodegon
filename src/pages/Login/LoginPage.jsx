@@ -36,13 +36,13 @@ const LoginPage = () => {
       padding: '1rem'
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-sidebar)',
+        backgroundColor: 'var(--bg-card)',
         padding: '2.5rem',
         borderRadius: 'var(--radius)',
         width: '100%',
-        maxWidth: '400px',
-        boxShadow: 'var(--shadow)',
-        border: '1px solid var(--border)'
+        maxWidth: '420px',
+        boxShadow: '0 30px 80px rgba(15, 23, 42, 0.18)',
+        border: '1px solid rgba(148, 163, 184, 0.24)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ color: 'var(--primary)', marginBottom: '0.5rem' }}>Sistema POS</h1>

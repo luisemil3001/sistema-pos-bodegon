@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FileX, CheckCircle } from 'lucide-react';
 import api from '../../api/api';
+import { formatCurrency } from '../../utils/format';
+import { FileX, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const MOTIVOS = [
   'Producto en mal estado',
@@ -20,10 +21,7 @@ const CreditNoteModal = ({ isOpen, onClose, invoice, settings, onSuccess }) => {
 
   if (!isOpen || !invoice) return null;
 
-  const formatNum = (val) => {
-    const n = parseFloat(val);
-    return isNaN(n) ? '0.00' : n.toFixed(2);
-  };
+  const formatNum = formatCurrency;
 
   const motivoFinal = motivo === 'Otro' ? motivoCustom : motivo;
 

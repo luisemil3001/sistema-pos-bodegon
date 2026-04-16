@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Edit, Trash2, Shield, CheckCircle, XCircle } from 'lucide-react';
 import useUsers from '../../hooks/useUsers';
+import usePagination from '../../hooks/usePagination';
 import { useAuth } from '../../context/AuthContext';
+import AlertMessage from '../../components/AlertMessage';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
 
 const UsersPage = () => {
     const { user: currentUser } = useAuth();
     const isAdmin = currentUser?.rol === 'admin';
-    const { users, loading, error, fetchUsers, createUser, updateUser, deleteUser } = useUsers();
+    const { users, loading, error, fetchUsers, createUser, updateUser, deleteUser, clearError } = useUsers();
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [formData, setFormData] = useState({ nombre: '', usuario: '', password: '', rol: 'cajero', activo: 1 });
@@ -37,18 +41,31 @@ const UsersPage = () => {
 
         if (res.success) {
             setShowModal(false);
-            alert('Usuario guardado con éxito');
-        } else {
-            alert(res.message);
+            // El éxito se maneja automáticamente por el hook
         }
+        // El error ya se maneja en el hook
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('¿Está seguro de eliminar este usuario?')) {
             const res = await deleteUser(id);
-            if (!res.success) alert(res.message);
+            if (!res.success) {
+                // El error ya se maneja en el hook
+                return;
+            }
         }
     };
+
+    // Determinar qué usuarios mostrar
+    const visibleUsers = isAdmin ? users : users.filter(u => u.id === currentUser?.id);
+
+    const {
+        paginatedItems: displayedUsers,
+        currentPage,
+        totalPages,
+        totalItems: filteredCount,
+        goToPage
+    } = usePagination(visibleUsers, 10); // 10 usuarios por página
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -67,7 +84,17 @@ const UsersPage = () => {
                 )}
             </div>
 
-            {error && <div style={{ color: 'var(--danger)', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>{error}</div>}
+            {error && (
+                <AlertMessage
+                    type="error"
+                    message={error}
+                    onClose={clearError}
+                />
+            )}
+
+            {loading && (
+                <LoadingSpinner text="Cargando usuarios..." />
+            )}
 
             <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -83,10 +110,10 @@ const UsersPage = () => {
                     <tbody>
                         {loading && users.length === 0 ? (
                             <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>Cargando usuarios...</td></tr>
-                        ) : (isAdmin ? users : users.filter(u => u.id === currentUser?.id)).length === 0 ? (
+                        ) : displayedUsers.length === 0 ? (
                             <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>No hay usuarios registrados</td></tr>
                         ) : (
-                            (isAdmin ? users : users.filter(u => u.id === currentUser?.id)).map(user => (
+                            displayedUsers.map(user => (
                                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                     <td style={{ padding: '1rem', fontWeight: '500' }}>{user.nombre}</td>
                                     <td style={{ padding: '1rem' }}>{user.usuario}</td>
@@ -120,6 +147,19 @@ const UsersPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Paginación */}
+            {visibleUsers.length > 10 && (
+                <div style={{ marginTop: '1rem' }}>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredCount}
+                        itemsPerPage={10}
+                        onPageChange={goToPage}
+                    />
+                </div>
+            )}
 
             {showModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>

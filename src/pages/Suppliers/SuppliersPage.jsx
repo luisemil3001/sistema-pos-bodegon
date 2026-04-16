@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import useSuppliers from '../../hooks/useSuppliers';
+import usePagination from '../../hooks/usePagination';
 import SupplierModal from './SupplierModal';
+import AlertMessage from '../../components/AlertMessage';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
 
 const SuppliersPage = () => {
-  const { suppliers, loading, error, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } = useSuppliers();
+  const { suppliers, loading, error, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, clearError } = useSuppliers();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,22 +31,38 @@ const SuppliersPage = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`¿Está seguro que desea eliminar al proveedor "${name}"?`)) {
       const res = await deleteSupplier(id);
-      if (!res.success) alert(res.message);
+      if (!res.success) {
+        // El error ya se maneja en el hook
+        return;
+      }
     }
   };
 
   const handleSaveModal = async (supplierData) => {
-    if (editingSupplier) {
-      return await updateSupplier(editingSupplier.id, supplierData);
-    } else {
-      return await createSupplier(supplierData);
+    const res = editingSupplier
+      ? await updateSupplier(editingSupplier.id, supplierData)
+      : await createSupplier(supplierData);
+
+    if (res.success) {
+      setIsModalOpen(false);
+      setEditingSupplier(null);
     }
+    // El error ya se maneja en el hook
+    return res;
   };
 
-  const filteredSuppliers = suppliers.filter(s => 
-    s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredSuppliers = suppliers.filter(s =>
+    s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.rnc_cedula && s.rnc_cedula.includes(searchTerm))
   );
+
+  const {
+    paginatedItems: displayedSuppliers,
+    currentPage,
+    totalPages,
+    totalItems: filteredCount,
+    goToPage
+  } = usePagination(filteredSuppliers, 15); // 15 proveedores por página
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
@@ -63,17 +83,23 @@ const SuppliersPage = () => {
 
       {/* Filters & Errors */}
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          {error}
-        </div>
+        <AlertMessage
+          type="error"
+          message={error}
+          onClose={clearError}
+        />
+      )}
+
+      {loading && (
+        <LoadingSpinner text="Cargando proveedores..." />
       )}
 
       <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre o RNC/Cédula..." 
+          <input
+            type="text"
+            placeholder="Buscar por nombre o RNC/Cédula..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '100%', paddingLeft: '2.5rem' }}
@@ -84,7 +110,9 @@ const SuppliersPage = () => {
       {/* Data Table */}
       <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {loading && suppliers.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando proveedores...</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <LoadingSpinner text="Cargando proveedores..." />
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -104,7 +132,7 @@ const SuppliersPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredSuppliers.map(s => (
+                  displayedSuppliers.map(s => (
                     <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '1rem', fontWeight: '500' }}>{s.nombre}</td>
                       <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{s.rnc_cedula || '-'}</td>
@@ -139,10 +167,23 @@ const SuppliersPage = () => {
         )}
       </div>
 
-      <SupplierModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        supplier={editingSupplier} 
+      {/* Paginación */}
+      {filteredSuppliers.length > 15 && (
+        <div style={{ marginTop: '1rem' }}>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredCount}
+            itemsPerPage={15}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
+
+      <SupplierModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        supplier={editingSupplier}
         onSave={handleSaveModal}
       />
     </div>

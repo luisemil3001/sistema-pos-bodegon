@@ -1,11 +1,15 @@
 import React from 'react';
-import { X, Printer, Loader2, Play, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { X, Printer, Loader2, Play, MessageSquare } from 'lucide-react';
 import { generateWhatsAppLink } from '../../utils/whatsappHelper';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 
 const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings }) => {
   const navigate = useNavigate();
+  const tasa = parseFloat(settings?.tasa_dolar || 1);
+  const toBs = (val) => (parseFloat(val) * tasa);
+  const formatNum = formatCurrency;
 
   if (!isOpen) return null;
 
@@ -79,6 +83,9 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
                   <div style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Cliente</div>
                   <div style={{ fontWeight: 'bold' }}>{cotizacion.cliente_nombre || 'CONSUMIDOR FINAL'}</div>
                   {cotizacion.rnc_cedula && <div style={{ fontSize: '0.85rem' }}>RNC/CI: {cotizacion.rnc_cedula}</div>}
+                  {(cotizacion.cliente_telefono || cotizacion.telefono) && (
+                    <div style={{ fontSize: '0.85rem' }}>TEL: {cotizacion.cliente_telefono || cotizacion.telefono}</div>
+                  )}
                   {cotizacion.direccion && <div style={{ fontSize: '0.85rem', color: '#666' }}>{cotizacion.direccion}</div>}
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -102,27 +109,42 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
                   {cotizacion.items?.map((it, idx) => (
                     <tr key={it.id} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '0.75rem' }}>{it.producto_nombre}</td>
-                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>{it.cantidad}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem' }}>$ {parseFloat(it.precio_unitario).toFixed(2)}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: '500' }}>$ {parseFloat(it.subtotal).toFixed(2)}</td>
+                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>{formatQty(it.cantidad)}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem' }}>
+                        <div>Bs. {formatNum(toBs(it.precio_unitario))}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#666' }}>$ {formatNum(it.precio_unitario)}</div>
+                      </td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: '500' }}>
+                        <div>Bs. {formatNum(toBs(it.subtotal))}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#666' }}>$ {formatNum(it.subtotal)}</div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ width: '250px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                <div style={{ width: '280px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
                     <span style={{ color: '#666' }}>Subtotal:</span>
-                    <span>$ {parseFloat(cotizacion.subtotal || 0).toFixed(2)}</span>
+                    <span>Bs. {formatNum(toBs(cotizacion.subtotal || 0))}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                    <span style={{ color: '#666' }}>Impuestos (IVA):</span>
-                    <span>$ {parseFloat(cotizacion.itbis || 0).toFixed(2)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+                    <span style={{ color: '#666' }}>IVA ({settings?.itbis_tasa || 16}%):</span>
+                    <span>Bs. {formatNum(toBs(cotizacion.itbis || 0))}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '2px solid var(--primary)', marginTop: '0.5rem', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--primary)' }}>
-                    <span>Total:</span>
-                    <span>$ {parseFloat(cotizacion.total || 0).toFixed(2)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderTop: '2px solid var(--primary)', marginTop: '0.5rem', fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--primary)' }}>
+                    <span>TOTAL Bs:</span>
+                    <span>Bs. {formatNum(toBs(cotizacion.total || 0))}</span>
+                  </div>
+                  <div style={{ borderTop: '1px solid #ddd', marginTop: '5px', paddingTop: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                      <span style={{ color: '#666' }}>REF. USD:</span>
+                      <span>$ {formatNum(cotizacion.total || 0)}</span>
+                    </div>
+                    <div style={{ fontSize: '0.65rem', textAlign: 'right', color: '#888', fontStyle: 'italic' }}>
+                      Tasa: Bs. {formatNum(tasa)}
+                    </div>
                   </div>
                 </div>
               </div>

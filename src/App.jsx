@@ -1,32 +1,34 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { HashRouter, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout';
 
-// Pages - Importaciones verificadas
-import LoginPage from './pages/Login/LoginPage';
-import DashboardPage from './pages/Dashboard/DashboardPage';
-import ProductsPage from './pages/Products/ProductsPage';
-import POSPage from './pages/POS/POSPage';
-import CustomersPage from './pages/Customers/CustomersPage';
-import InvoicesPage from './pages/Invoices/InvoicesPage';
-import ReportsPage from './pages/Reports/ReportsPage';
-import SettingsPage from './pages/Settings/SettingsPage';
-import SuppliersPage from './pages/Suppliers/SuppliersPage';
-import PurchasesPage from './pages/Purchases/PurchasesPage';
-import NewPurchasePage from './pages/Purchases/NewPurchasePage';
-import InventoryPage from './pages/Inventory/InventoryPage';
-import AccountingPage from './pages/Accounting/AccountingPage';
-import UsersPage from './pages/Users/UsersPage';
-import CajaPage from './pages/Caja/CajaPage';
-import StockAdjustmentsPage from './pages/Inventory/StockAdjustmentsPage';
-import CreditNotesPage from './pages/Invoices/CreditNotesPage';
-import CotizacionesPage from './pages/Cotizaciones/CotizacionesPage';
-import WorkstationsPage from './pages/Caja/WorkstationsPage';
-import AuditPage from './pages/Reports/AuditPage';
+// Pages - Lazy loading para mejor rendimiento
+const LoginPage = React.lazy(() => import('./pages/Login/LoginPage'));
+const DashboardPage = React.lazy(() => import('./pages/Dashboard/DashboardPage'));
+const ProductsPage = React.lazy(() => import('./pages/Products/ProductsPage'));
+const POSPage = React.lazy(() => import('./pages/POS/POSPage'));
+const CustomersPage = React.lazy(() => import('./pages/Customers/CustomersPage'));
+const InvoicesPage = React.lazy(() => import('./pages/Invoices/InvoicesPage'));
+const ReportsPage = React.lazy(() => import('./pages/Reports/ReportsPage'));
+const SettingsPage = React.lazy(() => import('./pages/Settings/SettingsPage'));
+const SuppliersPage = React.lazy(() => import('./pages/Suppliers/SuppliersPage'));
+const PurchasesPage = React.lazy(() => import('./pages/Purchases/PurchasesPage'));
+const NewPurchasePage = React.lazy(() => import('./pages/Purchases/NewPurchasePage'));
+const InventoryPage = React.lazy(() => import('./pages/Inventory/InventoryPage'));
+const AccountingPage = React.lazy(() => import('./pages/Accounting/AccountingPage'));
+const UsersPage = React.lazy(() => import('./pages/Users/UsersPage'));
+const CajaPage = React.lazy(() => import('./pages/Caja/CajaPage'));
+const StockAdjustmentsPage = React.lazy(() => import('./pages/Inventory/StockAdjustmentsPage'));
+const CreditNotesPage = React.lazy(() => import('./pages/Invoices/CreditNotesPage'));
+const CotizacionesPage = React.lazy(() => import('./pages/Cotizaciones/CotizacionesPage'));
+const WorkstationsPage = React.lazy(() => import('./pages/Caja/WorkstationsPage'));
+const AuditPage = React.lazy(() => import('./pages/Reports/AuditPage'));
 
 // Lógica para detectar si es Electron o Navegador (Evita la pantalla azul)
 const isElectron = navigator.userAgent.toLowerCase().includes(' electron');
@@ -34,20 +36,22 @@ const Router = isElectron ? HashRouter : BrowserRouter;
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Ruta Pública */}
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Rutas Privadas (Protegidas) */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            {/* Redirección inicial al entrar al sistema */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <Suspense fallback={<LoadingSpinner text="Cargando aplicación..." />}>
+            <Routes>
+              {/* Ruta Pública */}
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Rutas Privadas (Protegidas) */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }>
+                {/* Redirección inicial al entrar al sistema */}
+                <Route index element={<Navigate to="/dashboard" replace />} />
             
             {/* Módulos del Sistema */}
             <Route path="dashboard" element={<DashboardPage />} />
@@ -83,11 +87,13 @@ function App() {
             } />
           </Route>
 
-          {/* Captura cualquier otra ruta y manda al inicio */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+              {/* Captura cualquier otra ruta y manda al inicio */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

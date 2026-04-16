@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, History, ClipboardList, Search, FileText, TrendingDown, TrendingUp, AlertCircle, Monitor } from 'lucide-react';
 import useReports from '../../hooks/useReports';
 import useWorkstations from '../../hooks/useWorkstations';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 const AuditPage = () => {
     const { fetchShifts, fetchAdjustments } = useReports();
@@ -146,7 +147,7 @@ const AuditPage = () => {
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>
-                                                ${(parseFloat(shift.total_ventas_efectivo) + parseFloat(shift.total_ventas_tarjeta)).toFixed(2)}
+                                                ${formatCurrency(parseFloat(shift.total_ventas_efectivo || 0) + parseFloat(shift.total_ventas_tarjeta || 0))}
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                 <span style={{ 
@@ -156,7 +157,7 @@ const AuditPage = () => {
                                                     color: shift.diferencia === 0 ? 'var(--success)' : 'var(--danger)',
                                                     fontWeight: 'bold'
                                                 }}>
-                                                    {shift.diferencia > 0 ? '+' : ''}{parseFloat(shift.diferencia).toFixed(2)}
+                                                    {shift.diferencia > 0 ? '+' : ''}{formatCurrency(shift.diferencia)}
                                                 </span>
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -194,7 +195,7 @@ const AuditPage = () => {
                                         <td style={{ padding: '1rem', textAlign: 'center' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: adj.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
                                                 {adj.tipo === 'entrada' ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
-                                                {adj.cantidad}
+                                                {formatQty(adj.cantidad)}
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem' }}>

@@ -3,6 +3,7 @@ import { Search, Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import usePurchases from '../../hooks/usePurchases';
 import PurchaseDetailModal from './PurchaseDetailModal';
+import { formatCurrency } from '../../utils/format';
 
 const PurchasesPage = () => {
   const { purchases, loading, error, fetchPurchases, fetchPurchaseDetail } = usePurchases();
@@ -106,7 +107,7 @@ const PurchasesPage = () => {
                       </td>
                       <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{p.registrador_nombre}</td>
                       <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--text-main)' }}>
-                        ${parseFloat(p.total).toFixed(2)}
+                        ${formatCurrency(p.total)}
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
                         <button 

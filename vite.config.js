@@ -14,7 +14,7 @@ export default defineConfig(({ mode, command }) => {
     plugins: [react()],
     server: {
       host: true, // Permite que el sistema sea visto en la red local del cliente
-      port: 5173, // Puerto de desarrollo
+      port: 5773, // Puerto de desarrollo
       proxy: {
         // Redirige automáticamente todas las llamadas de /api al Backend
         '/api': {

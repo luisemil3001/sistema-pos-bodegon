@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import usePurchases from '../../hooks/usePurchases';
 import useSuppliers from '../../hooks/useSuppliers';
 import api from '../../api/api';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 const NewPurchasePage = () => {
   const navigate = useNavigate();
@@ -211,7 +212,7 @@ const NewPurchasePage = () => {
                       <tr key={item.id} style={{ borderBottom: '1px dashed var(--border)' }}>
                         <td style={{ padding: '0.8rem 0' }}>
                           <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{item.nombre}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Costo Anterior: ${parseFloat(item.precio_costo || 0).toFixed(2)}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Costo Anterior: ${formatCurrency(item.precio_costo || 0)}</div>
                         </td>
                         <td style={{ padding: '0.8rem 0' }}>
                           <input 
@@ -233,7 +234,7 @@ const NewPurchasePage = () => {
                           />
                         </td>
                         <td style={{ padding: '0.8rem 0', textAlign: 'right', fontWeight: 'bold' }}>
-                          ${(item.cantidad * item.costo_unitario).toFixed(2)}
+                          ${formatCurrency(item.cantidad * item.costo_unitario)}
                         </td>
                         <td style={{ padding: '0.8rem 0', textAlign: 'center' }}>
                           <button onClick={() => removeFromCart(item.id)} style={{ padding: '0.2rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
@@ -246,7 +247,7 @@ const NewPurchasePage = () => {
             </div>
 
             <div style={{ padding: '1rem 1.5rem', borderTop: '2px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-sidebar)' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Total Factura: <span style={{ color: 'var(--primary)' }}>${getTotal().toFixed(2)}</span></div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Total Factura: <span style={{ color: 'var(--primary)' }}>${formatCurrency(getTotal())}</span></div>
               <button 
                 onClick={handleProcess}
                 disabled={cart.length === 0 || processing}
@@ -298,7 +299,7 @@ const NewPurchasePage = () => {
               >
                 <div>
                   <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.9rem' }}>{p.nombre}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock: {p.stock} | {p.codigo_barras || 'S/N'}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock: {formatQty(p.stock)} | {p.codigo_barras || 'S/N'}</div>
                 </div>
                 <div style={{ color: 'var(--primary)' }}>
                   <Plus size={18} />

@@ -1,8 +1,4 @@
-/**
- * whatsappHelper.js
- * Utilidad para generar enlaces de WhatsApp con mensajes pre-formateados 
- * para facturas y cotizaciones.
- */
+import { formatCurrency } from './format';
 
 export const generateWhatsAppLink = (invoice, settings) => {
   if (!invoice) return null;
@@ -11,10 +7,10 @@ export const generateWhatsAppLink = (invoice, settings) => {
     return invoice.cliente_nombre || invoice.cliente?.nombre || 'Cliente';
   };
 
-  const formatNum = (val) => {
-    const n = parseFloat(val);
-    return isNaN(n) ? "0.00" : n.toFixed(2);
-  };
+  const formatNum = formatCurrency;
+
+  const tasa = parseFloat(invoice.tasa_cambio_usada || settings?.tasa_dolar || 1);
+  const toBs = (val) => formatNum(parseFloat(val || 0) * tasa);
 
   const businessName = settings?.nombre_empresa || 'BODEGON LA PARED';
   
@@ -32,14 +28,15 @@ export const generateWhatsAppLink = (invoice, settings) => {
   
   // Items
   invoice.items?.forEach(item => {
-    const qty = item.cantidad;
+    const qty = parseFloat(item.cantidad);
     const name = item.producto_nombre || item.nombre || 'Producto';
-    const sub = formatNum(item.precio_unitario * item.cantidad);
-    message += `• ${qty}x ${name} - *$${sub}*\n`;
+    const subBs = toBs(item.precio_unitario * item.cantidad);
+    message += `• ${qty}x ${name} - *${subBs}*\n`;
   });
   
   message += `--------------------------\n`;
-  message += `*TOTAL A PAGAR: $${formatNum(invoice.total)}*\n\n`;
+  message += `*TOTAL A PAGAR: Bs. ${toBs(invoice.total)}*\n`;
+  message += `_(Ref. USD: $${formatNum(invoice.total)} a tasa Bs. ${formatNum(tasa)})_\n\n`;
   
   message += `Gracias por preferirnos. ✨`;
 

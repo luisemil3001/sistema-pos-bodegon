@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Printer, Receipt, XCircle, RotateCcw } from 'lucide-react';
 import useInvoices from '../../hooks/useInvoices';
+import usePagination from '../../hooks/usePagination';
 import ReceiptModal from './ReceiptModal';
 import CreditNoteModal from './CreditNoteModal';
+import AlertMessage from '../../components/AlertMessage';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
 import api from '../../api/api';
+import { formatCurrency } from '../../utils/format';
 
 const InvoicesPage = () => {
-  const { invoices, loading, error, fetchInvoices, fetchInvoiceDetalle, voidInvoice } = useInvoices();
+  const { invoices, loading, error, fetchInvoices, fetchInvoiceDetalle, voidInvoice, clearError } = useInvoices();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,10 +77,18 @@ const InvoicesPage = () => {
     setTimeout(() => setSuccessMsg(''), 6000);
   };
 
-  const filteredInvoices = invoices.filter(inv => 
-    inv.numero_factura.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredInvoices = invoices.filter(inv =>
+    inv.numero_factura.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (inv.cliente_nombre && inv.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const {
+    paginatedItems: displayedInvoices,
+    currentPage,
+    totalPages,
+    totalItems: filteredCount,
+    goToPage
+  } = usePagination(filteredInvoices, 15); // 15 facturas por página
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
@@ -88,16 +101,24 @@ const InvoicesPage = () => {
       </div>
 
       {successMsg && (
-        <div style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--success)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(34,197,94,0.3)', fontSize: '0.9rem' }}>
-          {successMsg}
-        </div>
+        <AlertMessage
+          type="success"
+          message={successMsg}
+          onClose={() => setSuccessMsg('')}
+        />
       )}
 
       {/* Filters & Errors */}
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          {error}
-        </div>
+        <AlertMessage
+          type="error"
+          message={error}
+          onClose={clearError}
+        />
+      )}
+
+      {loading && (
+        <LoadingSpinner text="Cargando facturas..." />
       )}
 
       <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
@@ -116,7 +137,9 @@ const InvoicesPage = () => {
       {/* Data Table */}
       <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {loading && invoices.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando historial...</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <LoadingSpinner text="Cargando historial..." />
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -126,20 +149,20 @@ const InvoicesPage = () => {
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Fecha</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Cliente</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Cajero</th>
-                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Método</th>
-                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Total</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Total ($)</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Total (Bs.)</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.length === 0 ? (
+                {displayedInvoices.length === 0 ? (
                   <tr>
                     <td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                       No se encontraron facturas.
                     </td>
                   </tr>
                 ) : (
-                  filteredInvoices.map(inv => (
+                  displayedInvoices.map(inv => (
                     <tr key={inv.id} style={{ borderBottom: '1px solid var(--border)', backgroundColor: inv.estado === 'anulada' ? 'rgba(239, 68, 68, 0.05)' : 'transparent', opacity: inv.estado === 'anulada' ? 0.7 : 1 }}>
                       <td style={{ padding: '1rem', fontWeight: '600', color: inv.estado === 'anulada' ? 'var(--text-muted)' : 'var(--primary)', textDecoration: inv.estado === 'anulada' ? 'line-through' : 'none' }}>
                         {inv.numero_factura}
@@ -162,8 +185,11 @@ const InvoicesPage = () => {
                           {inv.metodo_pago}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--text-main)' }}>
-                        ${parseFloat(inv.total).toFixed(2)}
+                      <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        ${formatCurrency(inv.total)}
+                      </td>
+                      <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--success)' }}>
+                        Bs. {formatCurrency(parseFloat(inv.total) * parseFloat(inv.tasa_cambio_usada || 1))}
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
@@ -194,6 +220,19 @@ const InvoicesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Paginación */}
+      {filteredInvoices.length > 15 && (
+        <div style={{ marginTop: '1rem' }}>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredCount}
+            itemsPerPage={15}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
 
       <ReceiptModal 
         isOpen={isModalOpen}

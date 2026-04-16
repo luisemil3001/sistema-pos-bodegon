@@ -61,12 +61,14 @@ const createCotizacion = async (req, res) => {
     const nextId = lastCot.length > 0 ? lastCot[0].id + 1 : 1;
     const numero_cotizacion = `COT-${fecha.getFullYear().toString().slice(-2)}${String(fecha.getMonth()+1).padStart(2,'0')}${String(fecha.getDate()).padStart(2,'0')}-${String(nextId).padStart(4,'0')}`;
 
+    const tasa_cambio_usada = parseFloat(empresa.tasa_dolar || 1);
+
     // 4. Insertar encabezado
     const [cotResult] = await connection.query(
       `INSERT INTO cotizaciones 
-      (numero_cotizacion, cliente_id, usuario_id, validez_dias, subtotal, itbis, igtf_monto, descuento, total) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [numero_cotizacion, cliente_id || null, usuario_id, validez_dias, totalSubtotal, totalIva, igtf_monto, descuentoFinal, granTotal]
+      (numero_cotizacion, cliente_id, usuario_id, validez_dias, subtotal, itbis, igtf_monto, descuento, total, tasa_cambio_usada) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [numero_cotizacion, cliente_id || null, usuario_id, validez_dias, totalSubtotal, totalIva, igtf_monto, descuentoFinal, granTotal, tasa_cambio_usada]
     );
 
     const nuevaCotId = cotResult.insertId;

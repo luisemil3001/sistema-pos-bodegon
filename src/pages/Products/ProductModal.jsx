@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
-const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers }) => {
+const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers, settings }) => {
+  const tasa = parseFloat(settings?.tasa_dolar || 1);
   const [formData, setFormData] = useState({
     codigo_barras: '',
     nombre: '',
@@ -195,13 +197,19 @@ const ProductModal = ({ isOpen, onClose, product, onSave, categories, suppliers 
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Precio Costo</label>
+              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>Precio Costo ($)</label>
               <input type="number" step="0.01" min="0" name="precio_costo" value={formData.precio_costo} onChange={handleChange} style={{ width: '100%' }} />
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                 ≈ Bs. {formatCurrency(parseFloat(formData.precio_costo || 0) * tasa)}
+              </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>Precio Venta *</label>
+              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>Precio Venta ($) *</label>
               <input type="number" step="0.01" min="0" name="precio_venta" value={formData.precio_venta} onChange={handleChange} style={{ width: '100%', border: '1px solid var(--primary)' }} />
+              <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '2px', fontWeight: 'bold' }}>
+                 = Bs. {formatCurrency(parseFloat(formData.precio_venta || 0) * tasa)}
+              </div>
             </div>
 
             <div>

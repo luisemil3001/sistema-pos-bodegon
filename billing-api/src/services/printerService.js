@@ -50,13 +50,14 @@ function generarComandosPOS(factura, empresa, opciones = {}) {
   lineas.push({ tipo: 'texto', texto: `FECHA: ${new Date(factura.fecha || Date.now()).toLocaleString('es-VE')}` });
   lineas.push({ tipo: 'texto', texto: `CLIENTE: ${factura.cliente_nombre || 'CONSUMIDOR FINAL'}` });
   if (factura.rnc_cedula) lineas.push({ tipo: 'texto', texto: `ID/CED: ${factura.rnc_cedula}` });
+  if (factura.cliente_telefono) lineas.push({ tipo: 'texto', texto: `TEL: ${factura.cliente_telefono}` });
   lineas.push({ tipo: 'texto', texto: `PAGO: ${(factura.metodo_pago || 'EFECTIVO').toUpperCase()}` });
   lineas.push({ tipo: 'separador', texto: linea });
 
   // Items
   (factura.items || []).forEach(item => {
     const nombre = (item.producto_nombre || item.nombre || '').substring(0, 18);
-    const cantidad = item.cantidad;
+    const cantidad = parseFloat(item.cantidad);
     const precio = parseFloat(item.precio_unitario || 0).toFixed(2);
     const subtotal = (cantidad * parseFloat(precio)).toFixed(2);
     lineas.push({ tipo: 'item', nombre, cantidad, precio, subtotal });
@@ -76,7 +77,17 @@ function generarComandosPOS(factura, empresa, opciones = {}) {
   }
 
   lineas.push({ tipo: 'gran_total', concepto: 'TOTAL', valor: parseFloat(factura.total || 0).toFixed(2) });
-  lineas.push({ tipo: 'separador', texto: linea });
+  
+  // Pie de página con Referencia USD (Nuevo requerimiento)
+  if (factura.tasa_cambio_usada || (factura.items && factura.items[0]?.tasa_cambio)) {
+    const tasa = factura.tasa_cambio_usada || factura.items[0]?.tasa_cambio || 1;
+    const totalUSD = (parseFloat(factura.total || 0) / tasa).toFixed(2);
+    lineas.push({ tipo: 'separador', texto: '.'.repeat(32) });
+    lineas.push({ tipo: 'centrar', texto: `REF USD: $${totalUSD}` });
+    lineas.push({ tipo: 'centrar', texto: `Tasa: Bs. ${tasa.toFixed(2)}` });
+    lineas.push({ tipo: 'separador', texto: linea });
+  }
+
   lineas.push({ tipo: 'centrar', texto: '*** GRACIAS POR SU COMPRA ***' });
   lineas.push({ tipo: 'cortar' });
 
@@ -95,9 +106,9 @@ function generarTextoPOS(lineas) {
       case 'centrar': return l.texto.padStart(16 + Math.floor(l.texto.length / 2)).padEnd(32);
       case 'texto': return l.texto;
       case 'separador': return l.texto;
-      case 'item': return `${l.cantidad}x ${l.nombre.padEnd(18)} $${l.subtotal}`;
-      case 'total': return `${l.concepto.padEnd(20)} $${l.valor}`;
-      case 'gran_total': return `** ${l.concepto.padEnd(18)} $${l.valor} **`;
+      case 'item': return `${l.cantidad}x ${l.nombre.substring(0, 16).padEnd(16)} ${l.subtotal}`;
+      case 'total': return `${l.concepto.padEnd(18)} Bs.${l.valor}`;
+      case 'gran_total': return `** ${l.concepto.padEnd(16)} Bs.${l.valor} **`;
       case 'cortar': return '\n\n\n';
       default: return '';
     }
@@ -127,10 +138,10 @@ function generarComandosFiscal(factura, empresa, marca, opciones = {}) {
     },
     items: (factura.items || []).map(item => ({
       descripcion: item.producto_nombre || item.nombre,
-      cantidad: item.cantidad,
+      cantidad: parseFloat(item.cantidad),
       precio_unitario: parseFloat(item.precio_unitario || 0),
       aplica_iva: item.aplica_iva || false,
-      subtotal: parseFloat(item.precio_unitario || 0) * item.cantidad,
+      subtotal: parseFloat(item.precio_unitario || 0) * parseFloat(item.cantidad),
     })),
     totales: {
       subtotal: parseFloat(factura.subtotal || 0),
@@ -178,7 +189,7 @@ function generarComandosTFHKA(datos, opciones) {
     cmds.push({ cmd: `\x1B800COPIA DE FACTURA: ${datos.numero_factura}\x0A`, desc: 'Doc No Fiscal - Linea 1' });
     cmds.push({ cmd: `\x1B800CLIENTE: ${datos.cliente.nombre}\x0A`, desc: 'Doc No Fiscal - Linea 2' });
     if (datos.cliente.rif) cmds.push({ cmd: `\x1B800RIF/CI: ${datos.cliente.rif}\x0A` });
-    cmds.push({ cmd: `\x1B800TOTAL: $${datos.totales.total.toFixed(2)}\x0A` });
+    cmds.push({ cmd: `\x1B800TOTAL: Bs.${datos.totales.total.toFixed(2)}\x0A` });
     cmds.push({ cmd: '\x1B810\x0A', desc: 'Cerrar Doc No Fiscal' });
   } else {
     cmds.push({ cmd: '\x1D\x21\x11', desc: 'Doble tamaño - Documento Fiscal' });
@@ -186,7 +197,7 @@ function generarComandosTFHKA(datos, opciones) {
     cmds.push({ cmd: `FAC:${datos.numero_factura}\x0A`, desc: 'Número factura' });
 
     datos.items.forEach(item => {
-      cmds.push({ cmd: `\x1BITEM:${item.descripcion}|${item.cantidad}|${item.precio_unitario}|${item.aplica_iva ? 'G' : 'E'}\x0A`, desc: `Item: ${item.descripcion}` });
+      cmds.push({ cmd: `\x1BITEM:${item.descripcion}|${parseFloat(item.cantidad)}|${item.precio_unitario}|${item.aplica_iva ? 'G' : 'E'}\x0A`, desc: `Item: ${item.descripcion}` });
     });
 
     cmds.push({ cmd: `\x1BSUBTOTAL:${datos.totales.subtotal.toFixed(2)}\x0A` });
@@ -212,7 +223,7 @@ function generarComandosEpsonFiscal(datos, opciones) {
     cmds.push({ cmd: `\x1B\x7C\x08`, desc: 'Abrir Doc No Fiscal' });
     cmds.push({ cmd: `\x1B\x7C\x09COPIA FACTURA: ${datos.numero_factura}\x0A` });
     cmds.push({ cmd: `\x1B\x7C\x09CLIENTE: ${datos.cliente.nombre}\x0A` });
-    cmds.push({ cmd: `\x1B\x7C\x09TOTAL: $${datos.totales.total.toFixed(2)}\x0A` });
+    cmds.push({ cmd: `\x1B\x7C\x09TOTAL: Bs.${datos.totales.total.toFixed(2)}\x0A` });
     cmds.push({ cmd: `\x1B\x7C\x0A`, desc: 'Cerrar Doc No Fiscal' });
   } else {
     cmds.push({ cmd: `\x1B\x7C\x03TAFACTURA\x0A`, desc: 'Tipo: Factura SENIAT' });
@@ -220,7 +231,7 @@ function generarComandosEpsonFiscal(datos, opciones) {
 
     datos.items.forEach(item => {
       const tipoIVA = item.aplica_iva ? 'I' : 'E';
-      cmds.push({ cmd: `\x1B\x7C\x06${item.descripcion}|${item.cantidad}|${item.precio_unitario.toFixed(2)}|${tipoIVA}\x0A` });
+      cmds.push({ cmd: `\x1B\x7C\x06${item.descripcion}|${parseFloat(item.cantidad)}|${item.precio_unitario.toFixed(2)}|${tipoIVA}\x0A` });
     });
 
     cmds.push({ cmd: '\x1B\x7C\x0A', desc: 'Subtotal y pago' });
@@ -244,13 +255,13 @@ function generarComandosBematech(datos, opciones) {
     cmds.push({ cmd: `\x1B\x61\x00` });
     cmds.push({ cmd: `FACTURA: ${datos.numero_factura}\x0A` });
     cmds.push({ cmd: `CLIENTE: ${datos.cliente.nombre}\x0A` });
-    cmds.push({ cmd: `TOTAL: $${datos.totales.total.toFixed(2)}\x0A` });
+    cmds.push({ cmd: `TOTAL: Bs.${datos.totales.total.toFixed(2)}\x0A` });
   } else {
     cmds.push({ cmd: `FACTURA FISCAL\x0A`, desc: 'Cabecera fiscal' });
     cmds.push({ cmd: `\x1B\x61\x00` });
 
     datos.items.forEach(item => {
-      cmds.push({ cmd: `\x1BVENDA:${item.descripcion}|${item.cantidad}|${item.precio_unitario.toFixed(3)}|${item.aplica_iva ? 'T' : 'I'}\x0A` });
+      cmds.push({ cmd: `\x1BVENDA:${item.descripcion}|${parseFloat(item.cantidad)}|${item.precio_unitario.toFixed(3)}|${item.aplica_iva ? 'T' : 'I'}\x0A` });
     });
 
     cmds.push({ cmd: `\x1BSUB-TOTAL\x0A` });
@@ -319,8 +330,8 @@ function generarPayloadNotaCredito(nota, empresa) {
   // Items devueltos
   (nota.items || []).forEach(item => {
     const nombre = (item.producto_nombre || '').substring(0, 18);
-    const subtotal = (parseFloat(item.precio_unitario || 0) * item.cantidad).toFixed(2);
-    lineas.push({ tipo: 'item', nombre, cantidad: item.cantidad, precio: parseFloat(item.precio_unitario || 0).toFixed(2), subtotal });
+    const subtotal = (parseFloat(item.precio_unitario || 0) * parseFloat(item.cantidad)).toFixed(2);
+    lineas.push({ tipo: 'item', nombre, cantidad: parseFloat(item.cantidad), precio: parseFloat(item.precio_unitario || 0).toFixed(2), subtotal });
   });
 
   lineas.push({ tipo: 'separador', texto: linea });

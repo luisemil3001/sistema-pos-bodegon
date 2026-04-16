@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { DollarSign, FileText, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
 import useReports from '../../hooks/useReports';
+import { formatCurrency } from '../../utils/format';
 
 const ReportsPage = () => {
   const { stats, loading, error, fetchStats } = useReports();
@@ -37,14 +38,15 @@ const ReportsPage = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
         <StatCard 
           title="Ventas de Hoy" 
-          value={`$${stats.ventas_hoy.total.toFixed(2)}`} 
-          subvalue={`${stats.ventas_hoy.cantidad} facturas emitidas`}
+          value={`Bs. ${formatCurrency(stats.ventas_hoy.total_bs || 0)}`} 
+          subvalue={`Ref: $${formatCurrency(stats.ventas_hoy.total || 0)} USD | ${stats.ventas_hoy.cantidad} facturas`}
           icon={DollarSign}
           color="#22c55e"
         />
         <StatCard 
           title="Ventas del Mes" 
-          value={`$${stats.ventas_mes.total.toFixed(2)}`} 
+          value={`Bs. ${formatCurrency(stats.ventas_mes.total_bs || 0)}`} 
+          subvalue={`Ref: $${formatCurrency(stats.ventas_mes.total || 0)} USD`}
           icon={TrendingUp}
           color="#3b82f6"
         />
@@ -100,7 +102,10 @@ const ReportsPage = () => {
                       <div style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '0.95rem' }}>{inv.numero_factura}</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(inv.fecha).toLocaleTimeString()}</div>
                     </div>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>${parseFloat(inv.total).toFixed(2)}</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: 'var(--success)' }}>Bs. {formatCurrency(inv.total_bs || 0)}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>${formatCurrency(inv.total)} USD</div>
+                    </div>
                   </div>
                 ))}
               </div>

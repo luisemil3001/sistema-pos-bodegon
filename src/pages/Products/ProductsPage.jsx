@@ -3,14 +3,21 @@ import { Plus, Search, Edit2, Trash2, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import useProducts from '../../hooks/useProducts';
+import useSettings from '../../hooks/useSettings';
+import usePagination from '../../hooks/usePagination';
 import ProductModal from './ProductModal';
+import AlertMessage from '../../components/AlertMessage';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 const ProductsPage = () => {
   const { 
     products, categories, suppliers, loading, error, 
     fetchProducts, fetchCategories, fetchSuppliers, 
-    addProduct, updateProduct, deleteProduct 
+    addProduct, updateProduct, deleteProduct, clearError 
   } = useProducts();
+  const { settings, fetchSettings } = useSettings();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,7 +27,8 @@ const ProductsPage = () => {
     fetchProducts();
     fetchCategories();
     fetchSuppliers();
-  }, [fetchProducts, fetchCategories, fetchSuppliers]);
+    fetchSettings();
+  }, [fetchProducts, fetchCategories, fetchSuppliers, fetchSettings]);
 
   const handleOpenNew = () => {
     setEditingProduct(null);
@@ -35,22 +43,38 @@ const ProductsPage = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`¿Está seguro que desea eliminar el producto "${name}"?`)) {
       const res = await deleteProduct(id);
-      if (!res.success) alert(res.message);
+      if (!res.success) {
+        // El error ya se maneja en el hook
+        return;
+      }
     }
   };
 
   const handleSaveModal = async (productData) => {
-    if (editingProduct) {
-      return await updateProduct(editingProduct.id, productData);
-    } else {
-      return await addProduct(productData);
+    const res = editingProduct
+      ? await updateProduct(editingProduct.id, productData)
+      : await addProduct(productData);
+
+    if (res.success) {
+      setIsModalOpen(false);
+      setEditingProduct(null);
     }
+    // El error ya se maneja en el hook
+    return res;
   };
 
   const filteredProducts = products.filter(p => 
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (p.codigo_barras && p.codigo_barras.includes(searchTerm))
   );
+
+  const {
+    paginatedItems: displayedProducts,
+    currentPage,
+    totalPages,
+    totalItems: filteredCount,
+    goToPage
+  } = usePagination(filteredProducts, 15); // 15 productos por página
 
   const exportToExcel = async () => {
     if (!products || products.length === 0) return alert('No hay productos para exportar');
@@ -80,14 +104,16 @@ const ProductsPage = () => {
     worksheet.addRow([]);
 
     // Configurar Encabezados
-    const headers = ['Código de Barras', 'Nombre del Producto', 'Categoría', 'Unidad', 'Costo Unit.', 'Venta Unit.', 'Stock Actual'];
+    const headers = ['Código de Barras', 'Nombre del Producto', 'Categoría', 'Unidad', 'Costo USD', 'Venta USD', 'Costo Bs.', 'Venta Bs.', 'Stock Actual'];
     worksheet.columns = [
       { key: 'codigo', width: 20 },
       { key: 'nombre', width: 40 },
       { key: 'categoria', width: 25 },
       { key: 'unidad', width: 15 },
-      { key: 'costo', width: 18 },
-      { key: 'venta', width: 18 },
+      { key: 'costo_usd', width: 15 },
+      { key: 'venta_usd', width: 15 },
+      { key: 'costo_bs', width: 18 },
+      { key: 'venta_bs', width: 18 },
       { key: 'stock', width: 15 }
     ];
 
@@ -105,6 +131,7 @@ const ProductsPage = () => {
     let totalVentaInventario = 0;
 
     const listToExport = filteredProducts.length > 0 ? filteredProducts : products;
+    const tasa = parseFloat(settings?.tasa_dolar || 1);
 
     listToExport.forEach((item, index) => {
       const costo = parseFloat(item.precio_costo || 0);
@@ -121,6 +148,8 @@ const ProductsPage = () => {
         item.unidad || 'Unid',
         costo,
         venta,
+        costo * tasa,
+        venta * tasa,
         stock
       ];
 
@@ -133,10 +162,10 @@ const ProductsPage = () => {
         
         if (colNumber <= 4) {
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        } else if (colNumber === 5 || colNumber === 6) {
+        } else if (colNumber >= 5 && colNumber <= 8) {
           cell.alignment = { vertical: 'middle', horizontal: 'right' };
-          cell.numFmt = '"$"#,##0.00';
-        } else if (colNumber === 7) {
+          cell.numFmt = colNumber <= 6 ? '"$"#,##0.00' : '"Bs. "#,##0.00';
+        } else if (colNumber === 9) {
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
           cell.font = { bold: true, color: { argb: stock <= (item.min_stock||5) ? 'EF4444' : '22C55E' } };
         }
@@ -212,19 +241,23 @@ const ProductsPage = () => {
 
       {/* Filters & Errors */}
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          {error}
-        </div>
+        <AlertMessage
+          type="error"
+          message={error}
+          onClose={clearError}
+        />
+      )}
+
+      {loading && (
+        <LoadingSpinner text="Cargando productos..." />
       )}
 
       <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre o código de barras..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+          <input
+            type="text"
+            placeholder="Buscar por nombre o código de barras..."
             style={{ width: '100%', paddingLeft: '2.5rem' }}
           />
         </div>
@@ -251,7 +284,8 @@ const ProductsPage = () => {
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Nombre</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Categoría</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Proveedor</th>
-                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Precio</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Precio ($)</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Precio (Bs.)</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>Stock</th>
                   <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
                 </tr>
@@ -264,7 +298,7 @@ const ProductsPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map(p => (
+                  displayedProducts.map(p => (
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{p.codigo_barras || '-'}</td>
                       <td style={{ padding: '1rem', fontWeight: '500' }}>{p.nombre}</td>
@@ -286,7 +320,7 @@ const ProductsPage = () => {
                       </td>
                       <td style={{ padding: '1rem', fontWeight: '600' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                          <span>${parseFloat(p.precio_venta).toFixed(2)}</span>
+                          <span>${formatCurrency(p.precio_venta)}</span>
                           {p.aplica_iva ? (
                             <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: '500' }}>+ IVA</span>
                           ) : (
@@ -294,12 +328,15 @@ const ProductsPage = () => {
                           )}
                         </div>
                       </td>
+                      <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                         Bs. {formatCurrency(parseFloat(p.precio_venta) * (settings?.tasa_dolar || 1))}
+                      </td>
                       <td style={{ padding: '1rem' }}>
                         <span style={{ 
                           color: p.stock <= p.min_stock ? 'var(--danger)' : 'var(--success)',
                           fontWeight: '600'
                         }}>
-                          {p.stock} {p.unidad}
+                          {formatQty(p.stock)} {p.unidad}
                         </span>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
@@ -329,6 +366,19 @@ const ProductsPage = () => {
         )}
       </div>
 
+      {/* Paginación */}
+      {filteredProducts.length > 15 && (
+        <div style={{ marginTop: '1rem' }}>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredCount}
+            itemsPerPage={15}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
+
       <ProductModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -336,6 +386,7 @@ const ProductsPage = () => {
         onSave={handleSaveModal}
         categories={categories}
         suppliers={suppliers}
+        settings={settings}
       />
     </div>
   );

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Search, Calendar, Clock } from 'lucide-react';
 import ContingenciaIndicator from '../ContingenciaIndicator';
+import ThemeSelector from '../ThemeSelector';
+import useTheme from '../../hooks/useTheme';
+import api from '../../api/api';
+import { formatCurrency } from '../../utils/format';
 
 
 const Header = () => {
@@ -8,6 +12,7 @@ const Header = () => {
   const [settings, setSettings] = useState(null);
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
   const [newRate, setNewRate] = useState('');
+  const { currentTheme, changeTheme } = useTheme();
 
   useEffect(() => {
     fetchSettings();
@@ -82,22 +87,22 @@ const Header = () => {
         </div>
         
         {settings && (
-          <button 
-            onClick={() => setIsRateModalOpen(true)}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.6rem', 
-              backgroundColor: 'rgba(34, 197, 94, 0.1)', 
-              color: 'var(--success)', 
-              padding: '0.5rem 1rem',
-              border: '1px solid var(--success)',
-              fontWeight: 'bold',
-              fontSize: '0.95rem'
-            }}
-          >
-            💵 Tasa: Bs. {parseFloat(settings.tasa_dolar).toFixed(2)}
-          </button>
+            <button 
+                onClick={() => setIsRateModalOpen(true)}
+                style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.6rem', 
+                backgroundColor: 'rgba(34, 197, 94, 0.1)', 
+                color: 'var(--success)', 
+                padding: '0.5rem 1rem',
+                border: '1px solid var(--success)',
+                fontWeight: 'bold',
+                fontSize: '0.95rem'
+                }}
+            >
+                💵 Tasa: Bs. {formatCurrency(settings.tasa_dolar)}
+            </button>
         )}
 
         <ContingenciaIndicator />
@@ -136,6 +141,8 @@ const Header = () => {
             <span>{formatTime(dateTime)}</span>
           </div>
         </div>
+
+        <ThemeSelector currentTheme={currentTheme} onThemeChange={changeTheme} />
 
         <button style={{ 
           position: 'relative', 

@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import useSettings from '../../hooks/useSettings';
 import api from '../../api/api';
+import { formatCurrency, formatQty } from '../../utils/format';
 
 const InventoryPage = () => {
   const { settings, fetchSettings } = useSettings();
@@ -185,11 +186,13 @@ const InventoryPage = () => {
         </div>
         <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', textTransform: 'uppercase' }}>Valor Inventario (Costo)</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${totals.totalCosto.toFixed(2)}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)' }}>${formatCurrency(totals.totalCosto)}</div>
+          <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bs. {formatCurrency(totals.totalCosto * (settings?.tasa_dolar || 1))}</div>
         </div>
         <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', textTransform: 'uppercase' }}>Valor Estimado (Venta)</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${totals.totalVenta.toFixed(2)}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${formatCurrency(totals.totalVenta)}</div>
+          <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bs. {formatCurrency(totals.totalVenta * (settings?.tasa_dolar || 1))}</div>
         </div>
         <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', textTransform: 'uppercase' }}>Próximos a Vencer</div>
@@ -281,7 +284,9 @@ const InventoryPage = () => {
                   <th onClick={() => handleSort('fecha_vencimiento')} style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', cursor: 'pointer', textAlign: 'center' }}>
                     Vencimiento <ArrowDownUp size={12}/>
                   </th>
-                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Valor Total</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Costo (Bs / $)</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Venta (Bs / $)</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Valor Total Bs.</th>
                 </tr>
               </thead>
               <tbody>
@@ -300,10 +305,16 @@ const InventoryPage = () => {
                         </td>
                         <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{p.categoria_nombre || '-'}</td>
                         <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', color: isLowStock ? 'var(--danger)' : 'var(--text-main)' }}>
-                          {p.stock} {p.unidad}
+                          {formatQty(p.stock)} {p.unidad}
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--text-muted)' }}>${parseFloat(p.precio_costo).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)' }}>${parseFloat(p.precio_venta).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <div style={{ fontWeight: '600' }}>Bs. {formatCurrency(parseFloat(p.precio_costo) * (settings?.tasa_dolar || 1))}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>${formatCurrency(p.precio_costo)}</div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <div style={{ fontWeight: '600', color: 'var(--primary)' }}>Bs. {formatCurrency(parseFloat(p.precio_venta) * (settings?.tasa_dolar || 1))}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>${formatCurrency(p.precio_venta)}</div>
+                        </td>
                         <td style={{ padding: '1rem', textAlign: 'center' }}>
                           {p.fecha_vencimiento ? (
                             (() => {
@@ -329,7 +340,10 @@ const InventoryPage = () => {
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sin fecha</span>
                           )}
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: '600' }}>${(p.stock * p.precio_costo).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: '600' }}>
+                          <div>Bs. {formatCurrency(p.stock * p.precio_costo * (settings?.tasa_dolar || 1))}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>${formatCurrency(p.stock * p.precio_costo)}</div>
+                        </td>
                       </tr>
                     );
                   })

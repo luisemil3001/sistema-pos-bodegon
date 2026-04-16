@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Printer, FileText, RotateCcw } from 'lucide-react';
 import api from '../../api/api';
+import { formatCurrency } from '../../utils/format';
 
 const CreditNotesPage = () => {
   const [creditNotes, setCreditNotes] = useState([]);
@@ -96,7 +97,7 @@ const CreditNotesPage = () => {
                         {nc.motivo}
                       </td>
                       <td style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'right', color: 'var(--danger)' }}>
-                        ${parseFloat(nc.total).toFixed(2)}
+                        ${formatCurrency(nc.total)}
                       </td>
                     </tr>
                   ))

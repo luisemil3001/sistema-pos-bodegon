@@ -27,24 +27,24 @@ const Sidebar = () => {
   const { logout, user } = useAuth();
 
   const allMenuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Punto de Venta', path: '/pos', icon: <ShoppingCart size={20} /> },
-    { name: 'Productos', path: '/productos', icon: <Package size={20} /> },
-    { name: 'Inventario', path: '/inventario', icon: <Archive size={20} /> },
-    { name: 'Ajustes de Stock', path: '/ajustes-stock', icon: <RefreshCw size={20} /> },
-    { name: 'Clientes', path: '/clientes', icon: <Users size={20} /> },
-    { name: 'Facturas', path: '/facturas', icon: <FileText size={20} /> },
-    { name: 'Cotizaciones', path: '/cotizaciones', icon: <FileDigit size={20} /> },
-    { name: 'Proveedores', path: '/proveedores', icon: <Truck size={20} /> },
-    { name: 'Compras', path: '/compras', icon: <ShoppingBag size={20} /> },
-    { name: 'Notas de Crédito', path: '/notas-credito', icon: <RotateCcw size={20} /> },
-    { name: 'Contabilidad', path: '/contabilidad', icon: <BookOpen size={20} /> },
-    { name: 'Control de Caja', path: '/caja', icon: <Lock size={20} /> },
-    { name: 'Reportes', path: '/reportes', icon: <BarChart3 size={20} /> },
-    { name: 'Auditoría', path: '/auditoria', icon: <ShieldCheck size={20} /> },
-    { name: 'Gestión Usuarios', path: '/usuarios', icon: <Users2 size={20} /> },
-    { name: 'Estaciones (Cajas)', path: '/estaciones', icon: <Monitor size={20} /> },
-    { name: 'Configuración', path: '/config', icon: <Settings size={20} /> },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Punto de Venta', path: '/pos', icon: ShoppingCart },
+    { name: 'Productos', path: '/productos', icon: Package },
+    { name: 'Inventario', path: '/inventario', icon: Archive },
+    { name: 'Ajustes de Stock', path: '/ajustes-stock', icon: RefreshCw },
+    { name: 'Clientes', path: '/clientes', icon: Users },
+    { name: 'Facturas', path: '/facturas', icon: FileText },
+    { name: 'Cotizaciones', path: '/cotizaciones', icon: FileDigit },
+    { name: 'Proveedores', path: '/proveedores', icon: Truck },
+    { name: 'Compras', path: '/compras', icon: ShoppingBag },
+    { name: 'Notas de Crédito', path: '/notas-credito', icon: RotateCcw },
+    { name: 'Contabilidad', path: '/contabilidad', icon: BookOpen },
+    { name: 'Control de Caja', path: '/caja', icon: Lock },
+    { name: 'Reportes', path: '/reportes', icon: BarChart3 },
+    { name: 'Auditoría', path: '/auditoria', icon: ShieldCheck },
+    { name: 'Gestión Usuarios', path: '/usuarios', icon: Users2 },
+    { name: 'Estaciones (Cajas)', path: '/estaciones', icon: Monitor },
+    { name: 'Configuración', path: '/config', icon: Settings },
   ];
 
   const menuItems = user?.rol === 'admin'
@@ -56,6 +56,7 @@ const Sidebar = () => {
       width: '260px',
       backgroundColor: 'var(--bg-sidebar)',
       borderRight: '1px solid var(--border)',
+      boxShadow: '2px 0 14px rgba(15, 23, 42, 0.08)',
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
@@ -70,28 +71,32 @@ const Sidebar = () => {
       <nav style={{ flex: 1, padding: '1rem' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Menú Principal</div>
         <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {menuItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) => (isActive ? 'active-link' : '')}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1rem',
-                  borderRadius: 'var(--radius)',
-                  color: isActive ? 'var(--primary)' : 'var(--text-main)',
-                  backgroundColor: isActive ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
-                  fontWeight: isActive ? '600' : '400',
-                  transition: 'all 0.2s'
-                })}
-              >
-                {item.icon}
-                {item.name}
-              </NavLink>
-            </li>
-          ))}
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) => (isActive ? 'active-link' : '')}
+                  style={({ isActive }) => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius)',
+                    color: isActive ? 'var(--primary)' : 'var(--text-main)',
+                    backgroundColor: isActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                    boxShadow: isActive ? 'inset 3px 0 0 var(--primary)' : 'none',
+                    fontWeight: isActive ? '600' : '400',
+                    transition: 'all 0.2s'
+                  })}
+                >
+                  <Icon size={20} />
+                  {item.name}
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 

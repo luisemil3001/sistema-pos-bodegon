@@ -127,6 +127,7 @@ const createInvoice = async (req, res) => {
       numero_factura,
       fecha: new Date().toISOString(),
       metodo_pago,
+      tasa_cambio_usada: tasa_cambio, // <--- AÑADIDO PARA EL PIE DE PÁGINA
       subtotal: totalSubtotal * tasa_cambio,
       itbis: totalIva * tasa_cambio,
       iva: totalIva * tasa_cambio,
@@ -286,6 +287,7 @@ const reprintInvoice = async (req, res) => {
     // CONVERSIÓN A BOLÍVARES PARA REIMPRESIÓN FISCAL
     const facturaEnBolivares = {
       ...facturaCompleta,
+      tasa_cambio_usada: tasa_cambio, // <--- ASEGURAR PARA EL PIE DE PÁGINA
       subtotal: facturaCompleta.subtotal * tasa_cambio,
       itbis: facturaCompleta.itbis * tasa_cambio,
       total: facturaCompleta.total * tasa_cambio,

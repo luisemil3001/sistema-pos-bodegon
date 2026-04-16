@@ -7,14 +7,14 @@ const getDashboardStats = async (req, res) => {
     
     // 1. Ventas del día actual
     const [ventasDiaRes] = await pool.query(
-      'SELECT IFNULL(SUM(total), 0) as total_ventas, COUNT(id) as cantidad_facturas FROM facturas WHERE fecha >= ?',
+      'SELECT IFNULL(SUM(total), 0) as total_ventas, IFNULL(SUM(total * tasa_cambio_usada), 0) as total_bs, COUNT(id) as cantidad_facturas FROM facturas WHERE fecha >= ?',
       [todayStart]
     );
 
     // 2. Ventas del mes actual
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 19).replace('T', ' ');
     const [ventasMesRes] = await pool.query(
-      'SELECT IFNULL(SUM(total), 0) as total_ventas FROM facturas WHERE fecha >= ?',
+      'SELECT IFNULL(SUM(total), 0) as total_ventas, IFNULL(SUM(total * tasa_cambio_usada), 0) as total_bs FROM facturas WHERE fecha >= ?',
       [monthStart]
     );
 
@@ -25,16 +25,18 @@ const getDashboardStats = async (req, res) => {
 
     // 4. Últimas 5 facturas
     const [ultimasFacturas] = await pool.query(
-      'SELECT numero_factura, total, fecha FROM facturas ORDER BY fecha DESC LIMIT 5'
+      'SELECT numero_factura, total, (total * tasa_cambio_usada) as total_bs, fecha, tasa_cambio_usada FROM facturas ORDER BY fecha DESC LIMIT 5'
     );
 
     res.json({
       ventas_hoy: {
         total: parseFloat(ventasDiaRes[0].total_ventas),
+        total_bs: parseFloat(ventasDiaRes[0].total_bs),
         cantidad: ventasDiaRes[0].cantidad_facturas
       },
       ventas_mes: {
-        total: parseFloat(ventasMesRes[0].total_ventas)
+        total: parseFloat(ventasMesRes[0].total_ventas),
+        total_bs: parseFloat(ventasMesRes[0].total_bs)
       },
       alertas_stock: bajoStockRes,
       actividad_reciente: ultimasFacturas

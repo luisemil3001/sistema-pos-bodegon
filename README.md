@@ -1,16 +1,231 @@
-# React + Vite
+# Sistema POS - Bodegón La Pared
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Un sistema completo de punto de venta desarrollado con React 19, TypeScript, Node.js y MySQL, diseñado para pequeñas y medianas empresas del sector retail.
 
-Currently, two official plugins are available:
+## 🚀 Características Principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Gestión Completa
+- **Productos**: Catálogo con códigos de barras, categorías y proveedores
+- **Clientes**: Base de datos de clientes con RNC/Cédula
+- **Proveedores**: Gestión de distribuidores y proveedores
+- **Facturación**: Sistema completo de facturación con impresión fiscal
+- **Inventario**: Control de stock con alertas de stock mínimo
+- **Usuarios**: Sistema de roles (Admin/Cajero) con permisos
+- **Reportes**: Dashboard con estadísticas y reportes detallados
 
-## React Compiler
+### Tecnologías Modernas
+- **Frontend**: React 19 con TypeScript, Vite, React Router
+- **Backend**: Node.js con Express, MySQL con autenticación JWT
+- **UI/UX**: Componentes modernos con temas personalizables
+- **Despliegue**: Electron para aplicaciones de escritorio
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Mejoras Implementadas
 
-## Expanding the ESLint configuration
+### 1. **Manejo Global de Errores**
+- ErrorBoundary para capturar errores no manejados
+- Sistema centralizado de manejo de errores con mensajes consistentes
+- Componentes de notificación elegantes (AlertMessage)
+- Indicadores de carga mejorados (LoadingSpinner)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. **Rendimiento Optimizado**
+- Code-splitting con React.lazy y Suspense
+- Bundle más pequeño y carga incremental
+- Paginación inteligente en todas las tablas
+- Optimización automática de assets
+
+### 3. **Sistema de Temas**
+- 3 temas disponibles: Claro, Oscuro y Azul
+- Cambio dinámico sin recargar la página
+- Persistencia automática en localStorage
+- Variables CSS personalizables
+
+### 4. **TypeScript Integration**
+- Configuración completa de TypeScript
+- Tipos definidos para todas las entidades
+- Mejor autocompletado y detección de errores
+- Migración gradual de archivos JavaScript
+
+### 5. **Validación Robusta**
+- Hook useFormValidation para validaciones en tiempo real
+- Mensajes de error específicos y útiles
+- Validación automática en blur y submit
+
+### 6. **Experiencia de Usuario Mejorada**
+- Navegación fluida con paginación
+- Mensajes de feedback consistentes
+- Indicadores de carga en todas las operaciones
+- Interfaz responsive y moderna
+
+## 📦 Instalación y Configuración
+
+### Prerrequisitos
+- Node.js 18+
+- MySQL 8+
+- Git
+
+### Instalación
+
+1. **Clonar el repositorio**
+```bash
+git clone <repository-url>
+cd mi-primer-react
+```
+
+2. **Instalar dependencias**
+```bash
+npm install
+```
+
+3. **Configurar la base de datos**
+```bash
+# En el directorio billing-api/
+cd billing-api
+npm install
+# Configurar las variables de entorno en .env
+# Ejecutar las migraciones de base de datos
+```
+
+4. **Desarrollo**
+```bash
+# Iniciar el backend
+cd billing-api
+npm start
+
+# En otra terminal, iniciar el frontend
+npm run dev
+```
+
+5. **Construir para producción**
+```bash
+npm run build
+npm run make  # Para crear instalador de Electron
+```
+
+## 🏗️ Arquitectura del Proyecto
+
+```
+├── src/
+│   ├── components/          # Componentes reutilizables
+│   │   ├── AlertMessage.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   ├── Pagination.tsx
+│   │   └── ThemeSelector.tsx
+│   ├── hooks/              # Hooks personalizados
+│   │   ├── useErrorHandler.ts
+│   │   ├── usePagination.ts
+│   │   └── useFormValidation.js
+│   ├── pages/              # Páginas principales
+│   │   ├── Products/
+│   │   ├── Customers/
+│   │   ├── Invoices/
+│   │   └── Users/
+│   ├── types/              # Definiciones TypeScript
+│   │   └── index.ts
+│   └── utils/              # Utilidades
+├── billing-api/            # Backend API
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   └── services/
+│   └── package.json
+└── package.json
+```
+
+## 🎨 Temas Disponibles
+
+### Tema Claro (Default)
+- Fondo blanco con acentos azules
+- Ideal para entornos de oficina
+
+### Tema Oscuro
+- Fondo oscuro para reducir fatiga visual
+- Perfecto para uso nocturno
+
+### Tema Azul
+- Tema moderno con tonos azules
+- Diseño elegante y profesional
+
+## 🔧 Scripts Disponibles
+
+```bash
+npm run dev          # Iniciar servidor de desarrollo
+npm run build        # Construir para producción
+npm run type-check   # Verificar tipos TypeScript
+npm run lint         # Ejecutar ESLint
+npm run preview      # Vista previa de producción
+npm run start        # Iniciar aplicación Electron
+npm run package      # Crear paquete Electron
+npm run make         # Crear instalador
+```
+
+## 📊 Características Técnicas
+
+### Frontend
+- **React 19** con hooks modernos
+- **TypeScript** para type safety
+- **Vite** para desarrollo rápido
+- **React Router** para navegación
+- **Axios** para llamadas API
+- **Lucide React** para iconos
+
+### Backend
+- **Node.js + Express** para API REST
+- **MySQL** con pool de conexiones
+- **JWT** para autenticación
+- **bcryptjs** para hash de contraseñas
+- **Serial port** para impresoras fiscales
+
+### Base de Datos
+- **MySQL 8+** con índices optimizados
+- **Migraciones** automáticas
+- **Triggers** para integridad de datos
+- **Vistas** para reportes complejos
+
+## 🚀 Despliegue
+
+### Desarrollo Local
+```bash
+npm run dev
+```
+
+### Producción
+```bash
+npm run build
+npm run make
+```
+
+### Docker (Opcional)
+```bash
+docker-compose up -d
+```
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crear rama para feature (`git checkout -b feature/AmazingFeature`)
+3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 👥 Soporte
+
+Para soporte técnico o consultas:
+- Email: soporte@bodegonlapared.com
+- WhatsApp: +1 (829) 123-4567
+
+## 🔄 Próximas Mejoras Planificadas
+
+- [ ] Tests unitarios con Jest
+- [ ] PWA features para uso offline
+- [ ] Integración con servicios de delivery
+- [ ] API de facturación electrónica
+- [ ] Dashboard con gráficos avanzados
+- [ ] Sistema de backups automáticos
+
+---
+
+**Desarrollado con ❤️ para Bodegón La Pared**

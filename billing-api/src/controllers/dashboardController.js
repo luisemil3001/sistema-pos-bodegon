@@ -91,7 +91,7 @@ const getCharts = async (req, res) => {
 const getTopProducts = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT p.nombre, SUM(i.cantidad) as cantidad, SUM(i.subtotal) as total
+            SELECT p.nombre, SUM(i.cantidad) as cantidad, SUM(i.subtotal) as total, SUM(i.subtotal * f.tasa_cambio_usada) as total_bs
             FROM factura_items i
             JOIN facturas f ON i.factura_id = f.id
             JOIN productos p ON i.producto_id = p.id
