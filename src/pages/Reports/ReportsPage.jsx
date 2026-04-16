@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
-import { DollarSign, FileText, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
+import { DollarSign, FileText, TrendingUp, AlertTriangle, Clock, BarChart3, Users, Package, Lock } from 'lucide-react';
 import useReports from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/format';
+import { useNavigate } from 'react-router-dom';
 
 const ReportsPage = () => {
   const { stats, loading, error, fetchStats } = useReports();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchStats();
@@ -113,6 +115,111 @@ const ReportsPage = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Reportes Detallados */}
+      <div style={{ marginTop: '2rem' }}>
+        <h2 style={{ fontSize: '1.3rem', color: 'var(--text-main)', marginBottom: '1rem' }}>
+          <BarChart3 size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+          Reportes Detallados
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          <button
+            onClick={() => navigate('/reportes/ventas-producto')}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'var(--bg-secondary)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'var(--bg-card)'}
+          >
+            <BarChart3 size={24} style={{ color: 'var(--primary)' }} />
+            <div>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Ventas por Producto</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Análisis de productos más vendidos</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/reportes/clientes-top')}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'var(--bg-secondary)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'var(--bg-card)'}
+          >
+            <Users size={24} style={{ color: 'var(--primary)' }} />
+            <div>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Clientes Más Activos</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ranking de clientes por compras</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/reportes/inventario')}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'var(--bg-secondary)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'var(--bg-card)'}
+          >
+            <Package size={24} style={{ color: 'var(--primary)' }} />
+            <div>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Reporte de Inventario</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Estado completo del stock</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/reportes/movimientos-caja')}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'var(--bg-secondary)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'var(--bg-card)'}
+          >
+            <Lock size={24} style={{ color: 'var(--primary)' }} />
+            <div>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Movimientos de Caja</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Historial de aperturas y cierres</div>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
