@@ -16,10 +16,6 @@ const POSPage = React.lazy(() => import('./pages/POS/POSPage'));
 const CustomersPage = React.lazy(() => import('./pages/Customers/CustomersPage'));
 const InvoicesPage = React.lazy(() => import('./pages/Invoices/InvoicesPage'));
 const ReportsPage = React.lazy(() => import('./pages/Reports/ReportsPage'));
-const SalesByProductPage = React.lazy(() => import('./pages/Reports/SalesByProductPage'));
-const TopCustomersPage = React.lazy(() => import('./pages/Reports/TopCustomersPage'));
-const InventoryReportPage = React.lazy(() => import('./pages/Reports/InventoryReportPage'));
-const CashMovementsPage = React.lazy(() => import('./pages/Reports/CashMovementsPage'));
 const SettingsPage = React.lazy(() => import('./pages/Settings/SettingsPage'));
 const SuppliersPage = React.lazy(() => import('./pages/Suppliers/SuppliersPage'));
 const PurchasesPage = React.lazy(() => import('./pages/Purchases/PurchasesPage'));
@@ -70,10 +66,6 @@ function App() {
             <Route path="inventario" element={<InventoryPage />} />
             <Route path="contabilidad" element={<AccountingPage />} />
             <Route path="reportes" element={<ReportsPage />} />
-            <Route path="reportes/ventas-producto" element={<SalesByProductPage />} />
-            <Route path="reportes/clientes-top" element={<TopCustomersPage />} />
-            <Route path="reportes/inventario" element={<InventoryReportPage />} />
-            <Route path="reportes/movimientos-caja" element={<CashMovementsPage />} />
             <Route path="usuarios" element={<UsersPage />} />
             <Route path="caja" element={<CajaPage />} />
             <Route path="auditoria" element={
