@@ -6,23 +6,22 @@ import { generateWhatsAppLink } from '../../utils/whatsappHelper';
 import { formatCurrency, formatQty } from '../../utils/format';
 
 
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
+
 const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings }) => {
+  const contentRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef,
+    documentTitle: `Presupuesto_${cotizacion?.numero_cotizacion || 'BODEGON'}`,
+  });
+
   const navigate = useNavigate();
   const tasa = parseFloat(settings?.tasa_dolar || 1);
   const toBs = (val) => (parseFloat(val) * tasa);
   const formatNum = formatCurrency;
 
   if (!isOpen) return null;
-
-  const handlePrint = () => {
-    const printContent = document.getElementById('cotizacion-print-area');
-    const originalContents = document.body.innerHTML;
-    
-    document.body.innerHTML = printContent.innerHTML;
-    window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload(); // Recargar para restaurar eventos de React
-  };
 
   const handleFacturar = () => {
     // Almacenar temporalmente los datos en localStorage para que el POS los absorba
@@ -73,7 +72,7 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
           <button onClick={onClose} style={{ background: 'transparent', color: 'var(--text-muted)' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '1.5rem', overflowY: 'auto' }} id="cotizacion-print-area">
+        <div style={{ padding: '1.5rem', overflowY: 'auto' }} ref={contentRef}>
           {loadingDetalle || !cotizacion ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
               <Loader2 className="animate-spin" size={32} />
