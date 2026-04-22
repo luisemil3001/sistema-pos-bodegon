@@ -1,0 +1,33 @@
+================================================================
+  GUIA DE INSTALACION PROFESIONAL - SISTEMA BODEGON LA PARED
+================================================================
+
+Este kit permite instalar el sistema en el cliente de dos formas:
+
+OPCION A: INSTALACION VIA GIT (RECOMENDADA)
+-------------------------------------------
+1. Instalar Node.js (v18 o superior) en la PC.
+2. Instalar MySQL (v8 o superior - XAMPP es valido).
+3. Instalar Git para Windows (https://git-scm.com/).
+4. Copiar el archivo 'INSTALADOR_MAESTRO.bat' a la carpeta destino.
+5. Ejecutar 'INSTALADOR_MAESTRO.bat' y seguir instrucciones.
+
+OPCION B: INSTALACION VIA ZIP (SIN INTERNET/GIT)
+-----------------------------------------------
+1. Descargar el repositorio como ZIP desde GitHub.
+2. Extraer el contenido en la PC del cliente (ej: C:\SistemaBodegon).
+3. Instalar Node.js y MySQL.
+4. Ejecutar 'INSTALAR_SISTEMA.bat' dentro de la carpeta extraida.
+
+NOTAS IMPORTANTES:
+-----------------
+- El puerto por defecto del servidor es 3000.
+- El Punto de Venta es una aplicacion de Electron (se abre sola al iniciar).
+- Para la IMPRESORA FISCAL: Asegurese de configurar el puerto COM correcto
+  durante la instalacion o en el menu de Configuracion del sistema.
+- Usuario inicial: admin / Clave: admin123
+
+Para iniciar el sistema diariamente, use: iniciar_sistema.bat
+
+Creado por: Luis Emiliano Suarez - 2026
+================================================================
