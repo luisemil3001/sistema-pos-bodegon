@@ -34,11 +34,19 @@ const abrirCaja = async (req, res) => {
         // --- INICIO SINCRONIZACION BCV ---
         let bcvObservacion = '';
         try {
-            const bcvRate = await bcvService.getBcvRate();
-            if (bcvRate) {
-                await pool.query('UPDATE empresas SET tasa_dolar = ? WHERE id = 1', [bcvRate]);
-                bcvObservacion = ` [Sincronización BCV: ${bcvRate}]`;
-                console.log(`Tasa sincronizada en apertura: ${bcvRate}`);
+            // Verificar si la sincronización automática está habilitada
+            const [empresa] = await pool.query('SELECT auto_sync_bcv FROM empresas WHERE id = 1');
+            const autoSync = empresa.length > 0 ? empresa[0].auto_sync_bcv : true;
+
+            if (autoSync) {
+                const bcvRate = await bcvService.getBcvRate();
+                if (bcvRate) {
+                    await pool.query('UPDATE empresas SET tasa_dolar = ? WHERE id = 1', [bcvRate]);
+                    bcvObservacion = ` [Sincronización BCV: ${bcvRate}]`;
+                    console.log(`Tasa sincronizada en apertura: ${bcvRate}`);
+                }
+            } else {
+                console.log('Sincronización BCV saltada por configuración (Manual).');
             }
         } catch (bcvErr) {
             console.error('Error al sincronizar con BCV en apertura:', bcvErr.message);

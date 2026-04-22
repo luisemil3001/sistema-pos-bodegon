@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Download, Calendar, TrendingUp } from 'lucide-react';
 import useReports from '../../hooks/useReports';
+import { exportCSV, exportXLSX, exportPDF } from '../../utils/exportUtils';
 import { formatCurrency } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import AlertMessage from '../../components/AlertMessage';
+import { ReportButton, ReportCard, ReportFilters, ReportPageShell, ReportTable } from '../../components/ReportLayout';
 
 const TopCustomersPage = () => {
   const [data, setData] = useState([]);
@@ -41,56 +43,142 @@ const TopCustomersPage = () => {
   };
 
   const exportToCSV = () => {
-    const csv = [
-      ['Cliente', 'RNC', 'Facturas', 'Total USD', 'Total Bs'],
-      ...data.map(item => [
-        item.nombre,
-        item.rnc,
-        item.cantidad_facturas,
-        item.total_compras_usd,
-        item.total_compras_bs
-      ])
-    ].map(row => row.join(',')).join('\n');
+    const headers = ['Cliente', 'RNC', 'Facturas', 'Total USD', 'Total Bs'];
+    const rows = data.map(item => [
+      item.nombre,
+      item.rnc,
+      item.cantidad_facturas,
+      item.total_compras_usd,
+      item.total_compras_bs
+    ]);
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `clientes-top-${filters.startDate}-a-${filters.endDate}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    exportCSV(`clientes-top-${filters.startDate}-a-${filters.endDate}.csv`, headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 2, value: data.reduce((sum, item) => sum + (parseFloat(item.cantidad_facturas) || 0), 0) },
+          { index: 3, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_usd) || 0), 0) },
+          { index: 4, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_bs) || 0), 0) }
+        ]
+      }
+    });
+  };
+
+  const exportToXLSX = async () => {
+    const headers = ['Cliente', 'RNC', 'Facturas', 'Total USD', 'Total Bs'];
+    const rows = data.map(item => [
+      item.nombre,
+      item.rnc,
+      item.cantidad_facturas,
+      item.total_compras_usd,
+      item.total_compras_bs
+    ]);
+
+    await exportXLSX(`clientes-top-${filters.startDate}-a-${filters.endDate}.xlsx`, 'Top Clientes', headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 2, value: data.reduce((sum, item) => sum + (parseFloat(item.cantidad_facturas) || 0), 0) },
+          { index: 3, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_usd) || 0), 0) },
+          { index: 4, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_bs) || 0), 0) }
+        ]
+      }
+    });
+  };
+
+  const exportToPDF = () => {
+    const headers = ['Cliente', 'RNC', 'Facturas', 'Total USD', 'Total Bs'];
+    const rows = data.map(item => [
+      item.nombre,
+      item.rnc,
+      item.cantidad_facturas,
+      item.total_compras_usd,
+      item.total_compras_bs
+    ]);
+
+    exportPDF(`clientes-top-${filters.startDate}-a-${filters.endDate}.pdf`, 'Clientes Más Activos', headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 2, value: data.reduce((sum, item) => sum + (parseFloat(item.cantidad_facturas) || 0), 0) },
+          { index: 3, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_usd) || 0), 0) },
+          { index: 4, value: data.reduce((sum, item) => sum + (parseFloat(item.total_compras_bs) || 0), 0) }
+        ]
+      }
+    });
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-            <Users size={24} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-            Clientes Más Activos
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Ranking de clientes por volumen de compras
-          </p>
+    <ReportPageShell
+      title="Clientes Más Activos"
+      subtitle="Ranking de clientes por volumen de compras"
+      icon={Users}
+      actions={[
+        <ReportButton key="csv" onClick={exportToCSV} style={{ backgroundColor: 'var(--primary)' }}>
+          <Download size={16} />
+          CSV
+        </ReportButton>,
+        <ReportButton key="xlsx" onClick={exportToXLSX} style={{ backgroundColor: 'var(--success)' }}>
+          <Download size={16} />
+          Excel
+        </ReportButton>,
+        <ReportButton key="pdf" onClick={exportToPDF} style={{ backgroundColor: 'var(--warning)' }}>
+          <Download size={16} />
+          PDF
+        </ReportButton>
+      ]}
+    >
+      <ReportFilters>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
+          <label style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>Desde:</label>
+          <input
+            type="date"
+            name="startDate"
+            value={filters.startDate}
+            onChange={handleFilterChange}
+            style={{
+              padding: '0.5rem',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              backgroundColor: 'var(--bg-input)',
+              color: 'var(--text-main)'
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>Hasta:</label>
+          <input
+            type="date"
+            name="endDate"
+            value={filters.endDate}
+            onChange={handleFilterChange}
+            style={{
+              padding: '0.5rem',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              backgroundColor: 'var(--bg-input)',
+              color: 'var(--text-main)'
+            }}
+          />
         </div>
         <button
-          onClick={exportToCSV}
+          onClick={loadData}
           style={{
             backgroundColor: 'var(--primary)',
             color: 'white',
             border: 'none',
-            padding: '0.5rem 1rem',
+            padding: '0.75rem 1.25rem',
             borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
+            cursor: 'pointer'
           }}
         >
-          <Download size={16} />
-          Exportar CSV
+          Filtrar
         </button>
-      </div>
+      </ReportFilters>
 
       {/* Filtros */}
       <div style={{
@@ -156,12 +244,7 @@ const TopCustomersPage = () => {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden'
-        }}>
+        <ReportCard>
           <div style={{
             padding: '1rem',
             borderBottom: '1px solid var(--border)',
@@ -171,7 +254,7 @@ const TopCustomersPage = () => {
           }}>
             Top Clientes ({data.length})
           </div>
-          <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <ReportTable>
             {data.length === 0 ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Users size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -215,10 +298,10 @@ const TopCustomersPage = () => {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
+          </ReportTable>
+        </ReportCard>
       )}
-    </div>
+    </ReportPageShell>
   );
 };
 

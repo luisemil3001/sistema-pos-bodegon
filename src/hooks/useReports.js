@@ -47,6 +47,10 @@ const useReports = () => {
     fetchCashMovements: async (filters) => {
       const res = await api.get('/reports/cash-movements', { params: filters });
       return res.data;
+    },
+    fetchCustomerPurchases: async (clienteId, filters) => {
+      const res = await api.get(`/reports/customer-purchases/${clienteId}`, { params: filters });
+      return res.data;
     }
   };
 };

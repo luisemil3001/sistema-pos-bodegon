@@ -173,6 +173,30 @@ const ReportsPage = () => {
           </button>
 
           <button
+            onClick={() => navigate('/reportes/compras-cliente')}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'var(--bg-secondary)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'var(--bg-card)'}
+          >
+            <FileText size={24} style={{ color: 'var(--primary)' }} />
+            <div>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Compras por Cliente</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Historial detallado de un cliente específico</div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/reportes/inventario')}
             style={{
               backgroundColor: 'var(--bg-card)',

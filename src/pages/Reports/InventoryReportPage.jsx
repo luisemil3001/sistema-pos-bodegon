@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Download, AlertTriangle, CheckCircle } from 'lucide-react';
 import useReports from '../../hooks/useReports';
+import { exportCSV, exportXLSX, exportPDF } from '../../utils/exportUtils';
 import { formatCurrency } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import AlertMessage from '../../components/AlertMessage';
+import { ReportButton, ReportCard, ReportFilters, ReportPageShell, ReportTable } from '../../components/ReportLayout';
 
 const InventoryReportPage = () => {
   const [data, setData] = useState([]);
@@ -37,64 +39,103 @@ const InventoryReportPage = () => {
   });
 
   const exportToCSV = () => {
-    const csv = [
-      ['Producto', 'Código', 'Categoría', 'Stock', 'Mínimo', 'Precio Venta', 'Valor Inventario', 'Estado'],
-      ...filteredData.map(item => [
-        item.nombre,
-        item.codigo,
-        item.categoria_nombre || 'Sin categoría',
-        item.stock,
-        item.min_stock,
-        item.precio_venta,
-        item.valor_inventario_usd,
-        item.estado_stock
-      ])
-    ].map(row => row.join(',')).join('\n');
+    const headers = ['Producto', 'Código', 'Categoría', 'Stock', 'Mínimo', 'Precio Venta', 'Valor Inventario', 'Estado'];
+    const rows = filteredData.map(item => [
+      item.nombre,
+      item.codigo,
+      item.categoria_nombre || 'Sin categoría',
+      item.stock,
+      item.min_stock,
+      item.precio_venta,
+      item.valor_inventario_usd,
+      item.estado_stock
+    ]);
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-inventario-${filter}-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    exportCSV(`reporte-inventario-${filter}-${new Date().toISOString().split('T')[0]}.csv`, headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 3, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.stock) || 0), 0) },
+          { index: 6, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.valor_inventario_usd) || 0), 0) }
+        ]
+      }
+    });
+  };
+
+  const exportToXLSX = async () => {
+    const headers = ['Producto', 'Código', 'Categoría', 'Stock', 'Mínimo', 'Precio Venta', 'Valor Inventario', 'Estado'];
+    const rows = filteredData.map(item => [
+      item.nombre,
+      item.codigo,
+      item.categoria_nombre || 'Sin categoría',
+      item.stock,
+      item.min_stock,
+      item.precio_venta,
+      item.valor_inventario_usd,
+      item.estado_stock
+    ]);
+
+    await exportXLSX(`reporte-inventario-${filter}-${new Date().toISOString().split('T')[0]}.xlsx`, 'Inventario', headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 3, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.stock) || 0), 0) },
+          { index: 6, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.valor_inventario_usd) || 0), 0) }
+        ]
+      }
+    });
+  };
+
+  const exportToPDF = () => {
+    const headers = ['Producto', 'Código', 'Categoría', 'Stock', 'Mínimo', 'Precio Venta', 'Valor Inventario', 'Estado'];
+    const rows = filteredData.map(item => [
+      item.nombre,
+      item.codigo,
+      item.categoria_nombre || 'Sin categoría',
+      item.stock,
+      item.min_stock,
+      item.precio_venta,
+      item.valor_inventario_usd,
+      item.estado_stock
+    ]);
+
+    exportPDF(`reporte-inventario-${filter}-${new Date().toISOString().split('T')[0]}.pdf`, 'Reporte de Inventario', headers, rows, {
+      totals: {
+        label: 'Total',
+        labelIndex: 0,
+        values: [
+          { index: 3, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.stock) || 0), 0) },
+          { index: 6, value: filteredData.reduce((sum, item) => sum + (parseFloat(item.valor_inventario_usd) || 0), 0) }
+        ]
+      }
+    });
   };
 
   const lowStockCount = data.filter(item => item.estado_stock === 'Bajo').length;
   const totalValue = data.reduce((sum, item) => sum + (item.valor_inventario_usd || 0), 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-            <Package size={24} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-            Reporte de Inventario
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Estado completo del inventario y productos con stock bajo
-          </p>
-        </div>
-        <button
-          onClick={exportToCSV}
-          style={{
-            backgroundColor: 'var(--primary)',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
+    <ReportPageShell
+      title="Reporte de Inventario"
+      subtitle="Estado completo del inventario y productos con stock bajo"
+      icon={Package}
+      actions={[
+        <ReportButton key="csv" onClick={exportToCSV} style={{ backgroundColor: 'var(--primary)' }}>
           <Download size={16} />
-          Exportar CSV
-        </button>
-      </div>
-
-      {/* Estadísticas rápidas */}
+          CSV
+        </ReportButton>,
+        <ReportButton key="xlsx" onClick={exportToXLSX} style={{ backgroundColor: 'var(--success)' }}>
+          <Download size={16} />
+          Excel
+        </ReportButton>,
+        <ReportButton key="pdf" onClick={exportToPDF} style={{ backgroundColor: 'var(--warning)' }}>
+          <Download size={16} />
+          PDF
+        </ReportButton>
+      ]}
+    >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <div style={{
           backgroundColor: 'var(--bg-card)',
@@ -134,16 +175,7 @@ const InventoryReportPage = () => {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div style={{
-        backgroundColor: 'var(--bg-card)',
-        padding: '1.5rem',
-        borderRadius: 'var(--radius)',
-        border: '1px solid var(--border)',
-        display: 'flex',
-        gap: '1rem',
-        alignItems: 'center'
-      }}>
+      <ReportFilters>
         <label style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>Filtrar por estado:</label>
         <select
           value={filter}
@@ -153,26 +185,22 @@ const InventoryReportPage = () => {
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius)',
             backgroundColor: 'var(--bg-input)',
-            color: 'var(--text-main)'
+            color: 'var(--text-main)',
+            minWidth: '200px'
           }}
         >
           <option value="all">Todos los productos</option>
           <option value="low">Solo stock bajo</option>
           <option value="normal">Solo stock normal</option>
         </select>
-      </div>
+      </ReportFilters>
 
       {error && <AlertMessage type="error" message={error} />}
 
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden'
-        }}>
+        <ReportCard>
           <div style={{
             padding: '1rem',
             borderBottom: '1px solid var(--border)',
@@ -182,7 +210,7 @@ const InventoryReportPage = () => {
           }}>
             Productos ({filteredData.length})
           </div>
-          <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <ReportTable>
             {filteredData.length === 0 ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Package size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -242,10 +270,10 @@ const InventoryReportPage = () => {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
+          </ReportTable>
+        </ReportCard>
       )}
-    </div>
+    </ReportPageShell>
   );
 };
 

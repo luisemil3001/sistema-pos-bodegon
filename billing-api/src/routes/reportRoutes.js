@@ -10,5 +10,6 @@ router.get('/sales-by-product', verifyToken, reportController.getSalesByProduct)
 router.get('/top-customers', verifyToken, reportController.getTopCustomers);
 router.get('/inventory', verifyToken, reportController.getInventoryReport);
 router.get('/cash-movements', verifyToken, reportController.getCashMovements);
+router.get('/customer-purchases/:clienteKey', verifyToken, reportController.getCustomerPurchases);
 
 module.exports = router;

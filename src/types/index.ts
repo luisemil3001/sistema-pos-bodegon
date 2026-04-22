@@ -54,23 +54,6 @@ export interface Supplier {
   updated_at: string;
 }
 
-export interface Invoice {
-  id: number;
-  numero_factura: string;
-  cliente_id?: number;
-  usuario_id: number;
-  subtotal: number;
-  itbis: number;
-  total: number;
-  metodo_pago: 'efectivo' | 'tarjeta' | 'transferencia' | 'credito';
-  estado: 'pendiente' | 'pagada' | 'cancelada' | 'vencida';
-  fecha_emision: string;
-  fecha_vencimiento?: string;
-  notas?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface InvoiceItem {
   id: number;
   factura_id: number;
@@ -288,9 +271,6 @@ declare global {
       isMaximized: () => boolean;
     };
   }
-}
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface Invoice {

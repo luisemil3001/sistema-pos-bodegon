@@ -18,6 +18,7 @@ const InvoicesPage = React.lazy(() => import('./pages/Invoices/InvoicesPage'));
 const ReportsPage = React.lazy(() => import('./pages/Reports/ReportsPage'));
 const SalesByProductPage = React.lazy(() => import('./pages/Reports/SalesByProductPage'));
 const TopCustomersPage = React.lazy(() => import('./pages/Reports/TopCustomersPage'));
+const CustomerPurchasesPage = React.lazy(() => import('./pages/Reports/CustomerPurchasesPage'));
 const InventoryReportPage = React.lazy(() => import('./pages/Reports/InventoryReportPage'));
 const CashMovementsPage = React.lazy(() => import('./pages/Reports/CashMovementsPage'));
 const SettingsPage = React.lazy(() => import('./pages/Settings/SettingsPage'));
@@ -72,6 +73,7 @@ function App() {
             <Route path="reportes" element={<ReportsPage />} />
             <Route path="reportes/ventas-producto" element={<SalesByProductPage />} />
             <Route path="reportes/clientes-top" element={<TopCustomersPage />} />
+            <Route path="reportes/compras-cliente" element={<CustomerPurchasesPage />} />
             <Route path="reportes/inventario" element={<InventoryReportPage />} />
             <Route path="reportes/movimientos-caja" element={<CashMovementsPage />} />
             <Route path="usuarios" element={<UsersPage />} />

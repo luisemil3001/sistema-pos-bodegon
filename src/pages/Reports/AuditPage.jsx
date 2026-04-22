@@ -3,6 +3,7 @@ import { ShieldCheck, History, ClipboardList, Search, FileText, TrendingDown, Tr
 import useReports from '../../hooks/useReports';
 import useWorkstations from '../../hooks/useWorkstations';
 import { formatCurrency, formatQty } from '../../utils/format';
+import { ReportCard, ReportFilters, ReportPageShell } from '../../components/ReportLayout';
 
 const AuditPage = () => {
     const { fetchShifts, fetchAdjustments } = useReports();
@@ -75,16 +76,11 @@ const AuditPage = () => {
     );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <ShieldCheck size={32} color="var(--primary)" /> Auditoría de Sistema
-                    </h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Seguimiento detallado de operaciones, arqueos y movimientos de inventario</p>
-                </div>
-            </div>
-
+        <ReportPageShell
+            title="Auditoría de Sistema"
+            subtitle="Seguimiento detallado de operaciones, arqueos y movimientos de inventario"
+            icon={ShieldCheck}
+        >
             {/* TABS */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
                 <TabButton id="shifts" label="Historial de Arqueos" icon={History} />
@@ -209,7 +205,7 @@ const AuditPage = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </ReportPageShell>
     );
 };
 

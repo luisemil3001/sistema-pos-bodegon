@@ -108,6 +108,15 @@ const DashboardPage = () => {
                     onClick={() => navigate('/inventario?filtro=stock')}
                 />
                 <StatCard 
+                    title="Alertas Vencimiento" 
+                    value={stats?.alerta_vencimiento || 0} 
+                    icon={<Calendar size={24} />} 
+                    color="#fbbf24" 
+                    subtitle="Productos por vencer"
+                    warning={(stats?.alerta_vencimiento || 0) > 0}
+                    onClick={() => navigate('/inventario?filtro=vencimiento')}
+                />
+                <StatCard 
                     title="Cotizaciones" 
                     value={stats?.cotizaciones_pendientes || 0} 
                     icon={<FileDigit size={24} />} 

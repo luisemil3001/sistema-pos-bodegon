@@ -15,7 +15,9 @@ const SettingsPage = () => {
     tipo_impresora: 'pos',
     marca_fiscal: 'generica',
     puerto_impresora: 'COM1',
-    margen_vencimiento: 30
+    margen_vencimiento: 30,
+    tasa_dolar: 36.45,
+    auto_sync_bcv: true
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -37,16 +39,18 @@ const SettingsPage = () => {
         tipo_impresora: settings.tipo_impresora || 'pos',
         marca_fiscal: settings.marca_fiscal || 'generica',
         puerto_impresora: settings.puerto_impresora || 'COM1',
-        margen_vencimiento: settings.margen_vencimiento || 30
+        margen_vencimiento: settings.margen_vencimiento || 30,
+        tasa_dolar: settings.tasa_dolar || 36.45,
+        auto_sync_bcv: settings.auto_sync_bcv !== undefined ? (!!settings.auto_sync_bcv) : true
       });
     }
   }, [settings]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: ['itbis_tasa', 'igtf_tasa', 'margen_vencimiento'].includes(name) ? parseFloat(value) : value
+      [name]: type === 'checkbox' ? checked : (['itbis_tasa', 'igtf_tasa', 'margen_vencimiento', 'tasa_dolar'].includes(name) ? parseFloat(value) : value)
     }));
   };
 
@@ -256,6 +260,34 @@ const SettingsPage = () => {
               </>
             )}
 
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Tasa del Dólar (Bs.) *</label>
+              <input 
+                type="number" 
+                name="tasa_dolar"
+                step="0.0001"
+                min="0"
+                value={formData.tasa_dolar} 
+                onChange={handleChange}
+                required
+                style={{ width: '100%', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}
+              />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Indique la tasa de cambio base para el sistema.</p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <input 
+                type="checkbox" 
+                name="auto_sync_bcv"
+                id="auto_sync_bcv"
+                checked={formData.auto_sync_bcv} 
+                onChange={handleChange}
+                style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+              />
+              <label htmlFor="auto_sync_bcv" style={{ fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer', fontWeight: '500' }}>
+                Sincronización Automática con BCV
+              </label>
+            </div>
           </div>
         </div>
 

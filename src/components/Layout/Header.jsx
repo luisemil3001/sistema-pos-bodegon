@@ -12,12 +12,22 @@ const Header = () => {
   const [settings, setSettings] = useState(null);
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
   const [newRate, setNewRate] = useState('');
+  const [syncingRate, setSyncingRate] = useState(false);
   const { currentTheme, changeTheme } = useTheme();
 
   useEffect(() => {
-    fetchSettings();
+    const init = async () => {
+      await syncBcvRate(false);
+      await fetchSettings();
+    };
+    init();
+
+    const syncInterval = setInterval(() => syncBcvRate(false), 60 * 60 * 1000); // cada hora
     const timer = setInterval(() => setDateTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      clearInterval(syncInterval);
+    };
   }, []);
 
   const fetchSettings = async () => {
@@ -27,6 +37,21 @@ const Header = () => {
       setNewRate(res.data.tasa_dolar);
     } catch (err) {
       console.error('Error fetching settings in header', err);
+    }
+  };
+
+  const syncBcvRate = async (silent = false) => {
+    setSyncingRate(true);
+    try {
+      // Si el usuario hace click (not silent), pasamos manual: true para saltar el bloqueo
+      await api.post('/settings/sync-bcv', { manual: !silent });
+      await fetchSettings();
+    } catch (err) {
+      if (!silent) {
+        console.warn('No se pudo sincronizar con BCV al cargar:', err.response?.data?.error || err.message);
+      }
+    } finally {
+      setSyncingRate(false);
     }
   };
 
@@ -87,6 +112,7 @@ const Header = () => {
         </div>
         
         {settings && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button 
                 onClick={() => setIsRateModalOpen(true)}
                 style={{ 
@@ -103,6 +129,22 @@ const Header = () => {
             >
                 💵 Tasa: Bs. {formatCurrency(settings.tasa_dolar)}
             </button>
+            <button
+              onClick={syncBcvRate}
+              disabled={syncingRate}
+              style={{
+                backgroundColor: syncingRate ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+                color: 'var(--primary)',
+                border: '1px solid var(--primary)',
+                padding: '0.5rem 0.9rem',
+                borderRadius: '0.5rem',
+                fontSize: '0.85rem',
+                cursor: syncingRate ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {syncingRate ? 'Sincronizando...' : 'Sincronizar BCV'}
+            </button>
+          </div>
         )}
 
         <ContingenciaIndicator />

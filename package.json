@@ -20,6 +20,8 @@
     "electron-squirrel-startup": "^1.0.1",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.6.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",

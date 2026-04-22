@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Printer, Loader2, Play, MessageSquare } from 'lucide-react';
+import { X, Printer, Loader2, Play, MessageSquare, Trash2 } from 'lucide-react';
+import api from '../../api/api';
 import { generateWhatsAppLink } from '../../utils/whatsappHelper';
 import { formatCurrency, formatQty } from '../../utils/format';
 
@@ -32,6 +33,18 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
       items: cotizacion.items
     }));
     navigate('/pos');
+  };
+
+  const handleVoid = async () => {
+    if (!window.confirm('¿Está seguro de que desea ANULAR este presupuesto? Esta acción no se puede deshacer.')) return;
+    try {
+      await api.delete(`/cotizaciones/${cotizacion.id}`);
+      alert('Presupuesto anulado correctamente');
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al anular presupuesto');
+    }
   };
 
   return (
@@ -159,12 +172,20 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
 
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
           {cotizacion && cotizacion.estado === 'pendiente' && (
-            <button 
-              onClick={handleFacturar}
-              style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}
-            >
-              <Play size={18} /> Facturar
-            </button>
+            <>
+              <button 
+                onClick={handleVoid}
+                style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', fontWeight: 'bold', marginRight: 'auto' }}
+              >
+                <Trash2 size={18} /> Anular
+              </button>
+              <button 
+                onClick={handleFacturar}
+                style={{ padding: '0.5em 1em', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}
+              >
+                <Play size={18} /> Facturar
+              </button>
+            </>
           )}
           <button 
             onClick={() => {

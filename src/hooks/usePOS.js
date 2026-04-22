@@ -34,6 +34,20 @@ const usePOS = () => {
   };
 
   const addToCart = (product) => {
+    // Validación de fecha de vencimiento
+    if (product.fecha_vencimiento) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const vencIdx = new Date(product.fecha_vencimiento);
+      vencIdx.setHours(0, 0, 0, 0);
+      
+      if (vencIdx < today) {
+        if (!window.confirm(`⚠️ ADVERTENCIA: El producto "${product.nombre}" está VENCIDO (${vencIdx.toLocaleDateString()}). ¿Desea agregarlo de todas formas?`)) {
+          return;
+        }
+      }
+    }
+
     const qtyToAdd = product.cantidad || 1;
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);

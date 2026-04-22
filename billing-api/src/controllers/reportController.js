@@ -104,12 +104,12 @@ const getSalesByProduct = async (req, res) => {
   const { startDate, endDate } = req.query;
   try {
     let query = `
-      SELECT p.nombre, p.codigo, SUM(di.cantidad) as cantidad_vendida, 
-             SUM(di.total) as total_venta_usd, SUM(di.total * f.tasa_cambio_usada) as total_venta_bs
-      FROM detalle_facturas di
-      JOIN productos p ON di.producto_id = p.id
-      JOIN facturas f ON di.factura_id = f.id
-      WHERE f.estado = 'activa'
+      SELECT p.nombre, p.codigo_barras as codigo, SUM(fi.cantidad) as cantidad_vendida, 
+             SUM(fi.subtotal) as total_venta_usd, SUM(fi.subtotal * f.tasa_cambio_usada) as total_venta_bs
+      FROM factura_items fi
+      JOIN productos p ON fi.producto_id = p.id
+      JOIN facturas f ON fi.factura_id = f.id
+      WHERE f.estado = 'pagada'
     `;
     const params = [];
 
@@ -118,7 +118,7 @@ const getSalesByProduct = async (req, res) => {
       params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
     }
 
-    query += ` GROUP BY p.id, p.nombre, p.codigo ORDER BY cantidad_vendida DESC LIMIT 50 `;
+    query += ` GROUP BY p.id, p.nombre, p.codigo_barras ORDER BY cantidad_vendida DESC LIMIT 50 `;
 
     const [rows] = await pool.query(query, params);
     res.json(rows);
@@ -133,11 +133,11 @@ const getTopCustomers = async (req, res) => {
   const { startDate, endDate } = req.query;
   try {
     let query = `
-      SELECT c.nombre, c.rnc, COUNT(f.id) as cantidad_facturas, 
+      SELECT c.nombre, c.rnc_cedula as rnc, COUNT(f.id) as cantidad_facturas, 
              SUM(f.total) as total_compras_usd, SUM(f.total * f.tasa_cambio_usada) as total_compras_bs
       FROM clientes c
       JOIN facturas f ON c.id = f.cliente_id
-      WHERE f.estado = 'activa'
+      WHERE f.estado = 'pagada'
     `;
     const params = [];
 
@@ -146,7 +146,7 @@ const getTopCustomers = async (req, res) => {
       params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
     }
 
-    query += ` GROUP BY c.id, c.nombre, c.rnc ORDER BY total_compras_usd DESC LIMIT 20 `;
+    query += ` GROUP BY c.id, c.nombre, c.rnc_cedula ORDER BY total_compras_usd DESC LIMIT 20 `;
 
     const [rows] = await pool.query(query, params);
     res.json(rows);
@@ -209,6 +209,79 @@ const getCashMovements = async (req, res) => {
   }
 };
 
+// Reporte de compras por cliente específico
+const getCustomerPurchases = async (req, res) => {
+  const { clienteKey } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!clienteKey) {
+    return res.status(400).json({ error: 'Identificador de cliente requerido' });
+  }
+
+  try {
+    // Buscar cliente por ID, RNC o nombre
+    let clienteRows = [];
+    const isNumericKey = /^[0-9]+$/.test(clienteKey);
+
+    if (isNumericKey) {
+      [clienteRows] = await pool.query(
+        'SELECT id, nombre, rnc_cedula as rnc FROM clientes WHERE id = ? OR rnc_cedula = ?',
+        [clienteKey, clienteKey]
+      );
+    } else {
+      [clienteRows] = await pool.query(
+        'SELECT id, nombre, rnc_cedula as rnc FROM clientes WHERE rnc_cedula = ? OR nombre LIKE ?',
+        [clienteKey, `%${clienteKey}%`]
+      );
+    }
+
+    if (clienteRows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+
+    const cliente = clienteRows[0];
+    const clienteId = cliente.id;
+
+    // Contar total de compras
+    let countQuery = 'SELECT COUNT(*) as total_compras FROM facturas WHERE cliente_id = ? AND estado = "pagada"';
+    const countParams = [clienteId];
+
+    if (startDate && endDate) {
+      countQuery += ' AND fecha BETWEEN ? AND ?';
+      countParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    }
+
+    const [countRows] = await pool.query(countQuery, countParams);
+
+    // Obtener detalle de compras
+    let detailQuery = `
+      SELECT numero_factura, fecha, total, (total * tasa_cambio_usada) as total_bs, 
+             tasa_cambio_usada, metodo_pago
+      FROM facturas 
+      WHERE cliente_id = ? AND estado = "pagada"
+    `;
+    const detailParams = [clienteId];
+
+    if (startDate && endDate) {
+      detailQuery += ' AND fecha BETWEEN ? AND ?';
+      detailParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    }
+
+    detailQuery += ' ORDER BY fecha DESC LIMIT 50';
+
+    const [detailRows] = await pool.query(detailQuery, detailParams);
+
+    res.json({
+      cliente: clienteRows[0],
+      total_compras: countRows[0].total_compras,
+      compras: detailRows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener compras del cliente' });
+  }
+};
+
 module.exports = { 
   getDashboardStats, 
   getAuditShifts, 
@@ -216,5 +289,6 @@ module.exports = {
   getSalesByProduct,
   getTopCustomers,
   getInventoryReport,
-  getCashMovements
+  getCashMovements,
+  getCustomerPurchases
 };

@@ -145,4 +145,19 @@ const getCotizacionById = async (req, res) => {
   }
 };
 
-module.exports = { createCotizacion, getCotizaciones, getCotizacionById };
+// Anular una cotización
+const voidCotizacion = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query('UPDATE cotizaciones SET estado = "anulada" WHERE id = ? AND estado = "pendiente"', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'La cotización no existe o ya no está en estado pendiente' });
+    }
+    res.json({ success: true, message: 'Cotización anulada correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al anular la cotización' });
+  }
+};
+
+module.exports = { createCotizacion, getCotizaciones, getCotizacionById, voidCotizacion };
