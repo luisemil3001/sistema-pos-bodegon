@@ -10,12 +10,6 @@ import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
 
 const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings }) => {
-  const contentRef = useRef(null);
-  const handlePrint = useReactToPrint({
-    contentRef,
-    documentTitle: `Presupuesto_${cotizacion?.numero_cotizacion || 'BODEGON'}`,
-  });
-
   const navigate = useNavigate();
   const tasa = parseFloat(settings?.tasa_dolar || 1);
   const toBs = (val) => (parseFloat(val) * tasa);
@@ -23,6 +17,12 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
 
   if (!isOpen) return null;
 
+  const handlePrint = () => {
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+   
   const handleFacturar = () => {
     // Almacenar temporalmente los datos en localStorage para que el POS los absorba
     localStorage.setItem('pos_cotizacion_import', JSON.stringify({
@@ -72,7 +72,7 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
           <button onClick={onClose} style={{ background: 'transparent', color: 'var(--text-muted)' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '1.5rem', overflowY: 'auto' }} ref={contentRef}>
+        <div style={{ padding: '1.5rem', overflowY: 'auto' }} id="cotizacion-print-area">
           {loadingDetalle || !cotizacion ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
               <Loader2 className="animate-spin" size={32} />
@@ -169,7 +169,7 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
           )}
         </div>
 
-        <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <div className="no-print" style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
           {cotizacion && cotizacion.estado === 'pendiente' && (
             <>
               <button 
@@ -217,6 +217,17 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
 
         </div>
       </div>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #cotizacion-print-area, #cotizacion-print-area * { visibility: visible; }
+          #cotizacion-print-area {
+            position: absolute; left: 0; top: 0; width: 100%;
+            margin: 0; padding: 10mm; background: white;
+          }
+          .no-print { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 };

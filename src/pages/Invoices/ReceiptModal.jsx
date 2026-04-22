@@ -1,18 +1,18 @@
-import React, { useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import React from 'react';
 import { generateWhatsAppLink } from '../../utils/whatsappHelper';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, X } from 'lucide-react';
 import { formatCurrency, formatQty } from '../../utils/format';
 
 
 const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) => {
-  const contentRef = useRef(null);
-  const handlePrint = useReactToPrint({
-    contentRef,
-    documentTitle: `Ticket_${invoice?.numero_factura || 'BODEGON'}`,
-  });
-
   if (!isOpen) return null;
+
+  const handlePrint = () => {
+    // Pequeño delay para asegurar que el DOM esté listo
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
 
   const formatNum = formatCurrency;
 
@@ -49,7 +49,7 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
       backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', zIndex: 9999
     }}>
-      <div ref={contentRef} style={{
+      <div id="printable-receipt" style={{
         backgroundColor: 'white', color: 'black', padding: '15px',
         width: '320px', 
         fontFamily: "'Courier New', Courier, monospace",
