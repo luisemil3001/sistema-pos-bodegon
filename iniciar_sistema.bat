@@ -1,23 +1,24 @@
 @echo off
-title INSTALADOR AUTOMATICO - SISTEMA DE FACTURACION
+title SISTEMA POS - BODEGON LA PARED
 cls
 echo ====================================================
-echo   SISTEMA DE FACTURACION - INSTALADOR AUTOMATICO
+echo   INICIANDO SISTEMA BODEGON LA PARED
 echo ====================================================
 echo.
-echo [1/3] Limpiando instalaciones previas...
-docker-compose down
+
+echo [1/2] Iniciando Servidor de Datos...
+cd billing-api
+start /B node index.js > nul
+echo ✅ Servidor ejecutandose en segundo plano.
 echo.
-echo [2/3] Construyendo contenedores profesionales...
-docker-compose up -d --build
-echo.
-echo [3/3] Configurando base de datos...
-node update_db_cajas.cjs
+
+echo [2/2] Abriendo Interfaz de Ventas...
+echo (Espere unos segundos para conectar...)
+cd ..
+timeout /t 5 /nobreak > nul
+npm start
 echo.
 echo ====================================================
-echo   ¡SISTEMA INSTALADO Y CORRIENDO!
+echo   SISTEMA CERRADO
 echo ====================================================
-echo   Acceso Local: http://localhost
-echo   Acceso Red: http://DIRGENERAL-01
-echo ====================================================
-pause
+exit

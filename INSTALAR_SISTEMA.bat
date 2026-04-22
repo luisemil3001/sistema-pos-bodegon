@@ -3,12 +3,10 @@ title INSTALADOR - SISTEMA BODEGON LA PARED
 cls
 echo ====================================================
 echo   SISTEMA DE FACTURACION - BODEGON LA PARED
-echo   ASISTENTE DE INSTALACION
+echo   ASISTENTE DE INSTALACION PROFESIONAL
 echo ====================================================
 echo.
-echo Verificando dependencias...
-echo.
-
+echo Verificando Node.js...
 node -v >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] No se encontro Node.js instalado.
@@ -17,16 +15,25 @@ IF %ERRORLEVEL% NEQ 0 (
     exit
 )
 
-echo [1/2] Instalando paquetes base del servidor...
+echo [1/3] Instalando dependencias del Servidor (Backend)...
 cd billing-api
-call npm install --omit=dev
+call npm install --omit=dev --no-audit
+echo ✅ Servidor listo.
 echo.
 
-echo [2/2] Configurando la Base de Datos...
+echo [2/3] Instalando dependencias de la Interfaz (Frontend/Electron)...
+cd ..
+call npm install --no-audit
+echo ✅ Interfaz lista.
+echo.
+
+echo [3/3] Configurando Base de Datos del Cliente...
+cd billing-api
 node setup-cliente.js
 echo.
 
 echo ====================================================
-echo Puedes cerrar esta ventana e iniciar la aplicacion.
+echo   INSTALACION COMPLETADA
+echo   Ya puede usar "iniciar_sistema.bat" para entrar.
 echo ====================================================
 pause

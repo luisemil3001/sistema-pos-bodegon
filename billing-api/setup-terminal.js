@@ -48,11 +48,16 @@ async function setupTerminal() {
     if (seguir.toLowerCase() !== 's') process.exit(1);
   }
 
-  // Crear archivo .env local para esta caja
-  const envContent = `DB_HOST=${serverIp}\nDB_USER=${dbUser}\nDB_PASS=${dbPass}\nDB_NAME=facturacion_db\nPORT=3001\nNODE_ENV=production\nJWT_SECRET=super_secret_key_bodegon_2026\nJWT_EXPIRES=8h\nPRINTER_COM_PORT=${printerPort}\nFISCAL_SIMULATE=false\n`;
-
+  // Crear archivo .env local para esta caja (Backend)
+  const envContent = `DB_HOST=${serverIp}\nDB_USER=${dbUser}\nDB_PASS=${dbPass}\nDB_NAME=facturacion_db\nPORT=3000\nNODE_ENV=production\nJWT_SECRET=super_secret_key_bodegon_2026\nJWT_EXPIRES=8h\nPRINTER_COM_PORT=${printerPort}\nFISCAL_SIMULATE=false\n`;
   fs.writeFileSync(path.join(__dirname, '.env'), envContent);
-  console.log('\n✅ Archivo de configuracion (.env) generado localmente.');
+
+  // Crear archivo .env para la Interfaz (Frontend - Vite) en la raíz
+  const feEnvContent = `VITE_API_URL=http://${serverIp}:3000/api\n`;
+  fs.writeFileSync(path.join(__dirname, '..', '.env'), feEnvContent);
+
+  console.log('\n✅ Archivos de configuracion (.env) generados correctamente.');
+  console.log('✅ Interfaz vinculada a: http://' + serverIp + ':3000');
 
   console.log('\n====================================================');
   console.log('  ¡TERMINAL CONFIGURADA CORRECTAMENTE!');
