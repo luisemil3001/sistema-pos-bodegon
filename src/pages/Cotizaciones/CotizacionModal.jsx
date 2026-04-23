@@ -20,6 +20,10 @@ const CotizacionModal = ({ isOpen, onClose, cotizacion, loadingDetalle, settings
   const handlePrint = () => {
     setTimeout(() => {
       window.print();
+      // Cerrar automáticamente para agilizar
+      setTimeout(() => {
+        onClose && onClose();
+      }, 1000);
     }, 150);
   };
    

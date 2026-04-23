@@ -11,6 +11,10 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
     // Pequeño delay para asegurar que el DOM esté listo
     setTimeout(() => {
       window.print();
+      // Cerrar automáticamente para no obligar al usuario a darle a "Cerrar"
+      setTimeout(() => {
+        onClose && onClose();
+      }, 1000);
     }, 150);
   };
 
