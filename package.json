@@ -2,7 +2,7 @@
   "name": "sistema-pos-bodegon",
   "version": "1.0.0",
   "author": "Luis Emiliano Suarez",
-  "description": "Sistema de Ventas Bodegon La Pared",
+  "description": "Sistema de Ventas POS Profesional",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
@@ -56,7 +56,7 @@
     "forge": {
       "packagerConfig": {
         "asar": false,
-        "name": "SistemaBodegonLaPared"
+        "name": "SistemaPOS"
       },
       "makers": [
         {

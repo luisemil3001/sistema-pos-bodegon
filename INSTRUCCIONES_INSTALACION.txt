@@ -1,0 +1,43 @@
+====================================================
+  GUIA DE INSTALACION - SISTEMA POS BODEGON
+====================================================
+
+Este documento detalla los pasos para instalar el sistema en una
+computadora nueva desde este pendrive.
+
+PASO 0: REQUISITOS PREVIOS
+----------------------------------------------------
+Asegurese de instalar los siguientes programas antes de comenzar:
+
+1. Node.js: Ejecute el instalador de la carpeta "REQUISITOS"
+   (Version recomendada: 20.x o superior).
+2. MySQL Server: Instale MySQL o XAMPP. 
+   - IMPORTANTE: Memorice la clave de 'root'.
+
+PASO 1: COPIAR EL SISTEMA
+----------------------------------------------------
+Copie la carpeta completa de este pendrive a la unidad C: 
+de la computadora (Ejemplo: C:\SISTEMA-BODEGON).
+
+PASO 2: INSTALACION AUTOMATICA
+----------------------------------------------------
+1. Entre en la carpeta copiada (C:\SISTEMA-BODEGON).
+2. Haga doble clic en el archivo: INSTALAR_SISTEMA.bat
+3. El asistente le pedira:
+   - Host: Presione ENTER (localhost)
+   - Usuario: Presione ENTER (root)
+   - Contraseña: Escriba la clave de MySQL que definio en el Paso 0.
+4. Espere a que termine el proceso. Si todo sale bien, 
+   vera el mensaje "INSTALACION COMPLETADA EXITOSAMENTE".
+
+PASO 3: INICIO DEL SISTEMA
+----------------------------------------------------
+Para abrir el programa, ejecute: iniciar_sistema.bat
+
+----------------------------------------------------
+NOTAS ADICIONALES:
+- Se recomienda crear un acceso directo de 'iniciar_sistema.bat' 
+  en el escritorio para mayor comodidad del cliente.
+- Si hay problemas de conexion, verifique que el servicio 
+  de MySQL este iniciado.
+====================================================

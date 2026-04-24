@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  // Priorizamos la URL inyectada por Electron para permitir terminales en red
+  baseURL: window.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
 });
 
 // Interceptor para incluir el token JWT en cada petición
@@ -21,9 +22,8 @@ api.interceptors.response.use(
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.warn('Sesión expirada o no autorizada. Redirigiendo al login...');
       localStorage.removeItem('token');
-      // Solo redirigimos si no estamos ya en la página de login para evitar bucles
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+      if (!window.location.hash.includes('/login')) {
+        window.location.hash = '#/login';
       }
     }
     return Promise.reject(error);

@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title CONFIGURADOR DE PUNTO DE VENTA - BODEGON LA PARED
 cls
 echo ====================================================

@@ -5,6 +5,18 @@ const fs = require('fs'); // Añadido para verificar archivos
 
 let backendProcess;
 
+// Cargar variables de entorno desde .env si existe
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split(/\r?\n/).forEach(line => {
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      process.env[key.trim()] = valueParts.join('=').trim();
+    }
+  });
+}
+
 function checkMySQLAndStart() {
   // Verificamos si el servicio MySQL está corriendo
   exec('sc query MySql', (error, stdout) => {
@@ -52,19 +64,28 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: "SISTEMA POS - BODEGON LA PARED",
+    title: "SISTEMA POS",
     webPreferences: { 
       nodeIntegration: true,
       contextIsolation: false 
     }
   });
 
-  if (app.isPackaged) {
-    checkMySQLAndStart(); 
+  if (app.isPackaged || process.env.NODE_ENV === 'production') {
+    if (app.isPackaged) {
+      checkMySQLAndStart(); 
+    }
     win.loadFile(path.join(__dirname, 'dist', 'index.html'));
   } else {
     win.loadURL('http://localhost:5773');
   }
+
+  // Inyectar la configuración de la API dinámicamente para soportar terminales adicionales
+  win.webContents.on('did-finish-load', () => {
+    const serverIp = process.env.DB_HOST || 'localhost';
+    const apiUrl = `http://${serverIp}:3000/api`;
+    win.webContents.executeJavaScript(`window.VITE_API_URL = "${apiUrl}";`);
+  });
 }
 
 app.whenReady().then(createWindow);

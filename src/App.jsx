@@ -36,8 +36,8 @@ const WorkstationsPage = React.lazy(() => import('./pages/Caja/WorkstationsPage'
 const AuditPage = React.lazy(() => import('./pages/Reports/AuditPage'));
 
 // Lógica para detectar si es Electron o Navegador (Evita la pantalla azul)
-const isElectron = navigator.userAgent.toLowerCase().includes(' electron');
-const Router = isElectron ? HashRouter : BrowserRouter;
+// Forzamos HashRouter porque en producción (archivos locales file://) BrowserRouter rompe las rutas.
+const Router = HashRouter;
 
 function App() {
   return (

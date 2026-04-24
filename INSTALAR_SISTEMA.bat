@@ -1,5 +1,6 @@
 @echo off
-title INSTALADOR - SISTEMA BODEGON LA PARED
+cd /d "%~dp0"
+title INSTALADOR - SISTEMA BODEGON 
 cls
 echo ====================================================
 echo   SISTEMA DE FACTURACION - BODEGON LA PARED
@@ -16,19 +17,19 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 echo [1/3] Instalando dependencias del Servidor (Backend)...
-cd billing-api
+cd /d "%~dp0billing-api"
 call npm install --omit=dev --no-audit
 echo ✅ Servidor listo.
 echo.
 
 echo [2/3] Instalando dependencias de la Interfaz (Frontend/Electron)...
-cd ..
+cd /d "%~dp0"
 call npm install --no-audit
 echo ✅ Interfaz lista.
 echo.
 
 echo [3/3] Configurando Base de Datos del Cliente...
-cd billing-api
+cd /d "%~dp0billing-api"
 node setup-cliente.js
 echo.
 

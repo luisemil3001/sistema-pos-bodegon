@@ -1,4 +1,5 @@
 import React from 'react';
+import api from '../../api/api';
 import { NavLink } from 'react-router-dom';
 import { 
   ShoppingCart, 
@@ -25,6 +26,26 @@ import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
   const { logout, user } = useAuth();
+  const [empresa, setEmpresa] = React.useState('SISTEMA POS');
+
+  React.useEffect(() => {
+    const fetchEmpresa = async () => {
+      try {
+        const res = await api.get('/settings');
+        if (res.data && res.data.nombre_empresa) {
+          const nombre = res.data.nombre_empresa.toUpperCase();
+          setEmpresa(nombre);
+          document.title = `SISTEMA POS - ${nombre}`;
+        } else {
+          document.title = 'SISTEMA POS';
+        }
+      } catch (err) {
+        console.error('Error loading company name in sidebar');
+        document.title = 'SISTEMA POS';
+      }
+    };
+    fetchEmpresa();
+  }, []);
 
   const allMenuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -64,8 +85,12 @@ const Sidebar = () => {
       top: 0
     }}>
       <div style={{ padding: '2rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <div style={{ width: '40px', height: '40px', backgroundColor: 'var(--primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', color: 'var(--bg-main)', fontWeight: 'bold', fontSize: '1.2rem' }}>P</div>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary)' }}>SISTEMA POS</h2>
+        <div style={{ width: '40px', height: '40px', backgroundColor: 'var(--primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', color: 'var(--bg-main)', fontWeight: 'bold', fontSize: '1.2rem' }}>
+          {empresa.charAt(0)}
+        </div>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {empresa}
+        </h2>
       </div>
 
       <nav style={{ flex: 1, padding: '1rem' }}>

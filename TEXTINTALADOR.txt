@@ -1,0 +1,18 @@
+Es correcto. Como ya llevas la carpeta completa en el pendrive, no necesitas usar el INSTALADOR_MAESTRO.bat, ya que la única función adicional de ese archivo es descargar el código desde GitHub usando git clone.
+
+Para la instalación en el sitio del cliente, debes seguir estos pasos:
+
+Usar INSTALAR_SISTEMA.bat: Este es el archivo correcto. Se encargará de:
+Verificar que Node.js esté instalado.
+Instalar las dependencias necesarias (npm install).
+Configurar la base de datos (pedirá el usuario y contraseña de MySQL del cliente).
+Crear el archivo .env automáticamente.
+Notas importantes para que funcione correctamente:
+MySQL instalado: Asegúrate de que la computadora del cliente ya tenga MySQL Server instalado y funcionando antes de ejecutar el instalador.
+Internet (Opcional pero recomendado): El script INSTALAR_SISTEMA.bat ejecuta npm install. Si llevas la carpeta con las subcarpetas node_modules (tanto en la raíz como dentro de billing-api), el sistema podría funcionar sin internet, pero lo ideal es tener conexión un momento para que el comando verifique las librerías.
+Node.js: El cliente debe tener Node.js instalado (puedes llevar el instalador de Node.js en el mismo pendrive por si acaso).
+Resumen:
+
+Pendrive -> Cliente: Copias la carpeta.
+Ejecutar: INSTALAR_SISTEMA.bat.
+Para usar: iniciar_sistema.bat.

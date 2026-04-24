@@ -12,7 +12,7 @@ export const generateWhatsAppLink = (invoice, settings) => {
   const tasa = parseFloat(invoice.tasa_cambio_usada || settings?.tasa_dolar || 1);
   const toBs = (val) => formatNum(parseFloat(val || 0) * tasa);
 
-  const businessName = settings?.nombre_empresa || 'BODEGON LA PARED';
+  const businessName = settings?.nombre_empresa || 'SISTEMA POS';
   
   // Construcción del mensaje
   let message = `*${businessName}*\n`;

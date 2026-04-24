@@ -84,18 +84,31 @@ CREATE TABLE IF NOT EXISTS clientes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- TABLA: estaciones_trabajo
+CREATE TABLE IF NOT EXISTS estaciones_trabajo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE NOT NULL,
+    descripcion TEXT,
+    activa BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- TABLA: cajas (turnos)
 CREATE TABLE IF NOT EXISTS cajas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
+    estacion_id INT,
     fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     monto_apertura DECIMAL(15,2) NOT NULL,
     fecha_cierre TIMESTAMP NULL,
     monto_cierre DECIMAL(15,2) NULL,
     total_ventas_efectivo DECIMAL(15,2) DEFAULT 0,
     total_ventas_tarjeta DECIMAL(15,2) DEFAULT 0,
+    diferencia DECIMAL(15,2) DEFAULT 0,
+    observaciones TEXT,
     estado ENUM('abierta', 'cerrada') DEFAULT 'abierta',
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+    FOREIGN KEY (estacion_id) REFERENCES estaciones_trabajo(id)
 );
 
 -- TABLA: facturas
@@ -171,12 +184,18 @@ CREATE TABLE IF NOT EXISTS compras (
 );
 
 -- DATOS INICIALES
-INSERT INTO empresas (nombre, rnc, itbis_tasa, igtf_tasa, tasa_dolar, auto_sync_bcv)
-VALUES ('Bodegón La Pared', 'J-00000000-0', 16.00, 3.00, 36.50, 1);
+
+-- Empresa por defecto
+INSERT IGNORE INTO empresas (id, nombre, rnc, direccion, telefono, email, itbis_tasa, igtf_tasa, moneda, tasa_dolar, auto_sync_bcv) 
+VALUES (1, 'BODEGON LA PARED', 'J-00000000', 'DIRECCION GENERAL', '0000-0000000', 'admin@example.com', 16.00, 3.00, 'VES', 36.50, 1);
 
 -- Usuario: admin / Clave: admin123
-INSERT INTO usuarios (nombre, usuario, password, rol)
-VALUES ('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+INSERT IGNORE INTO usuarios (nombre, usuario, password, rol)
+VALUES ('Administrador', 'admin', '$2b$10$.338tuKsIGRgfrlmpSGuMupplPvUMr4V78FQ020z1o78.5qgcjMvS', 'admin');
+
+-- Estaciones iniciales
+INSERT IGNORE INTO estaciones_trabajo (id, nombre, descripcion) VALUES (1, 'CAJA PRINCIPAL', 'Servidor Central');
+INSERT IGNORE INTO estaciones_trabajo (id, nombre, descripcion) VALUES (2, 'CAJA 2', 'Terminal Adicional');
 
 -- Categorías por defecto
-INSERT INTO categorias (nombre) VALUES ('General'), ('Alimentos'), ('Bebidas'), ('Licores'), ('Limpieza');
+INSERT IGNORE INTO categorias (nombre) VALUES ('General'), ('Alimentos'), ('Bebidas'), ('Licores'), ('Limpieza');

@@ -63,17 +63,23 @@ const ReceiptModal = ({ isOpen, onClose, invoice, settings, loadingDetalle }) =>
         {/* ENCABEZADO DEL NEGOCIO CON DATOS REALES */}
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
           <h2 style={{ margin: '0', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            {settings?.nombre_empresa || 'BODEGON LA PARED'}
+            {settings?.nombre_empresa || 'SISTEMA POS'}
           </h2>
-          <p style={{ margin: '2px 0', fontSize: '0.85rem' }}>
-            <strong>RIF:</strong> {settings?.rnc_cedula || 'J-15823362-7'}
-          </p>
-          <p style={{ margin: '2px 0', fontSize: '0.85rem' }}>
-            <strong>TELÉFONO:</strong> {settings?.telefono || '04267852360'}
-          </p>
-          <p style={{ margin: '2px 0', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-            {settings?.direccion_fisica || 'CALLE SUCRE - CARIACO'}
-          </p>
+          {settings?.rnc_cedula && (
+            <p style={{ margin: '2px 0', fontSize: '0.85rem' }}>
+              <strong>RIF/RNC:</strong> {settings.rnc_cedula}
+            </p>
+          )}
+          {settings?.telefono && (
+            <p style={{ margin: '2px 0', fontSize: '0.85rem' }}>
+              <strong>TELÉFONO:</strong> {settings.telefono}
+            </p>
+          )}
+          {settings?.direccion && (
+            <p style={{ margin: '2px 0', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+              {settings.direccion}
+            </p>
+          )}
           <div style={{ borderBottom: '1px dashed #000', margin: '5px 0' }}></div>
         </div>
 
