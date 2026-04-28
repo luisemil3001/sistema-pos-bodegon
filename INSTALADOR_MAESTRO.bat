@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title INSTALADOR MAESTRO - SISTEMA POS BODEGON
 cls
 echo ====================================================
@@ -11,7 +12,7 @@ echo.
 git --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo [!] ERROR: Git no detectado en este sistema.
-    echo Por favor, instale Git primero o use la opcion de descarga manual (ZIP).
+    echo Por favor, instale Git primero o use la opcion de descarga manual [ZIP].
     echo Descarga Git en: https://git-scm.com/
     pause
     exit

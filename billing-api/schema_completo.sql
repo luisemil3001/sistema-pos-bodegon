@@ -171,12 +171,11 @@ CREATE TABLE IF NOT EXISTS compras (
 );
 
 -- DATOS INICIALES
-INSERT INTO empresas (nombre, rnc, itbis_tasa, igtf_tasa, tasa_dolar, auto_sync_bcv)
-VALUES ('Bodegón La Pared', 'J-00000000-0', 16.00, 3.00, 36.50, 1);
+
 
 -- Usuario: admin / Clave: admin123
-INSERT INTO usuarios (nombre, usuario, password, rol)
+INSERT IGNORE INTO usuarios (nombre, usuario, password, rol)
 VALUES ('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 
 -- Categorías por defecto
-INSERT INTO categorias (nombre) VALUES ('General'), ('Alimentos'), ('Bebidas'), ('Licores'), ('Limpieza');
+INSERT IGNORE INTO categorias (nombre) VALUES ('General'), ('Alimentos'), ('Bebidas'), ('Licores'), ('Limpieza');

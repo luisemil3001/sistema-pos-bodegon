@@ -60,10 +60,20 @@ function createWindow() {
   });
 
   if (app.isPackaged) {
-    checkMySQLAndStart(); 
+    // Modo instalado: carga el build estático
+    checkMySQLAndStart();
     win.loadFile(path.join(__dirname, 'dist', 'index.html'));
   } else {
-    win.loadURL('http://localhost:5773');
+    // Comprobamos si existe el build del frontend
+    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(distIndex)) {
+      // Modo producción local (cliente): usa el dist compilado
+      checkMySQLAndStart();
+      win.loadFile(distIndex);
+    } else {
+      // Modo desarrollo: conecta al servidor Vite
+      win.loadURL('http://localhost:5773');
+    }
   }
 }
 
