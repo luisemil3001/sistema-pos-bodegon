@@ -93,7 +93,7 @@ const Sidebar = () => {
         </h2>
       </div>
 
-      <nav style={{ flex: 1, padding: '1rem' }}>
+      <nav className="custom-scrollbar" style={{ flex: 1, padding: '1rem', overflowY: 'auto', overflowX: 'hidden' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Menú Principal</div>
         <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {menuItems.map((item) => {
